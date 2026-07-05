@@ -96,3 +96,51 @@ class TestGeneratePrometheusText:
         text = generate_prometheus_text(traces)
         assert 'provider="openai"' in text
         assert 'provider="anthropic"' in text
+
+
+class TestPrometheusExporter:
+    def test_exporter_no_prometheus_client(self) -> None:
+        import sys
+        from unittest.mock import patch
+
+        with patch.dict(sys.modules, {"prometheus_client": None}):
+            from importlib import reload
+
+            import keeto.exporters.prometheus as pmod
+
+            reload(pmod)
+            exp = pmod.PrometheusExporter()
+            assert exp._pc is None
+            assert exp.generate_latest() == "# prometheus_client not installed\n"
+            with pytest.raises(ImportError):
+                exp.start_server()
+            reload(pmod)  # restore for other tests
+
+    def test_exporter_record_span_no_client(self) -> None:
+        from keeto.exporters.prometheus import PrometheusExporter
+
+        exp = PrometheusExporter()
+        exp._pc = None  # simulate missing client
+        trace = _make_trace()
+        exp.record_span(trace.spans[0])  # should not raise
+
+    def test_exporter_ensure_init_noop_when_no_client(self) -> None:
+        from keeto.exporters.prometheus import PrometheusExporter
+
+        exp = PrometheusExporter()
+        exp._pc = None
+        exp._ensure_init()  # should be a no-op
+        assert not exp._initialized
+
+    def test_exporter_with_prometheus_client(self) -> None:
+        pytest.importorskip("prometheus_client")
+        from keeto.exporters.prometheus import PrometheusExporter
+
+        exp = PrometheusExporter()
+        if exp._pc is None:
+            pytest.skip("prometheus_client not installed")
+        trace = _make_trace(error=True)
+        exp.record_span(trace.spans[0])
+        assert exp._initialized
+        text = exp.generate_latest()
+        assert isinstance(text, str)

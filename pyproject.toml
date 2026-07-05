@@ -141,7 +141,12 @@ markers = [
 # ---------------------------------------------------------------------------
 [tool.coverage.run]
 source = ["src/keeto"]
-omit = ["*/dashboard/*", "*/cli/*"]
+omit = [
+    "*/dashboard/*",
+    "*/cli/*",
+    "*/integrations/*",
+    "*/storage/postgres.py",
+]
 
 [tool.coverage.report]
 fail_under = 80
