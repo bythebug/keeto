@@ -16,6 +16,7 @@ Layout
 
 from __future__ import annotations
 
+import contextlib
 from typing import TYPE_CHECKING, ClassVar
 
 from textual.app import App, ComposeResult
@@ -128,18 +129,18 @@ class KeetoApp(App[None]):
     """
 
     BINDINGS: ClassVar[list[Binding]] = [
-        Binding("q",         "quit",           "Quit",       show=True),
-        Binding("r",         "refresh",        "Refresh",    show=True),
-        Binding("/",         "focus_search",   "Search",     show=True),
-        Binding("d",         "toggle_dark",    "Dark/Light", show=True),
-        Binding("tab",       "focus_next",     "Next tab",   show=False),
-        Binding("shift+tab", "focus_previous", "Prev tab",   show=False),
+        Binding("q", "quit", "Quit", show=True),
+        Binding("r", "refresh", "Refresh", show=True),
+        Binding("/", "focus_search", "Search", show=True),
+        Binding("d", "toggle_dark", "Dark/Light", show=True),
+        Binding("tab", "focus_next", "Next tab", show=False),
+        Binding("shift+tab", "focus_previous", "Prev tab", show=False),
     ]
 
     # Reactive trace count shown in the sub-title
     trace_count: reactive[int] = reactive(0)
 
-    def __init__(self, storage: "StorageBackend") -> None:
+    def __init__(self, storage: StorageBackend) -> None:
         super().__init__()
         self._storage = storage
 
@@ -176,29 +177,19 @@ class KeetoApp(App[None]):
     async def _poll_storage(self) -> None:
         traces = await self._storage.list_traces(limit=1000)
         self.trace_count = len(traces)
-        self.sub_title = (
-            f"Live ● {self.trace_count} trace{'s' if self.trace_count != 1 else ''}"
-        )
+        self.sub_title = f"Live ● {self.trace_count} trace{'s' if self.trace_count != 1 else ''}"
         self._broadcast_traces(traces)
 
-    def _broadcast_traces(self, traces: list["Trace"]) -> None:
+    def _broadcast_traces(self, traces: list[Trace]) -> None:
         """Push fresh trace list to every view that knows how to consume it."""
-        try:
+        with contextlib.suppress(Exception):
             self.query_one(TracesView).refresh_data(traces)
-        except Exception:
-            pass
-        try:
+        with contextlib.suppress(Exception):
             self.query_one(CostView).refresh_data(traces)
-        except Exception:
-            pass
-        try:
+        with contextlib.suppress(Exception):
             self.query_one(PerformanceView).refresh_data(traces)
-        except Exception:
-            pass
-        try:
+        with contextlib.suppress(Exception):
             self.query_one(AnalysisView).refresh_data(traces)
-        except Exception:
-            pass
 
     # ------------------------------------------------------------------
     # Actions
@@ -209,10 +200,8 @@ class KeetoApp(App[None]):
 
     def action_focus_search(self) -> None:
         """/ key — focus the search bar in the Traces tab."""
-        try:
+        with contextlib.suppress(Exception):
             self.query_one(TracesView).focus_search()
-        except Exception:
-            pass
 
     def action_toggle_dark(self) -> None:
         """d key — toggle between dark and light theme (delegates to Textual built-in)."""

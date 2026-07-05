@@ -34,11 +34,12 @@ def _span_id_int(sid: str) -> int:
     return int(sid.ljust(16, "0")[:16], 16)
 
 
-def _to_otel_span(span: "Span", resource: Any) -> Any:
+def _to_otel_span(span: Span, resource: Any) -> Any:
     """Convert a Keeto Span to an OTel ReadableSpan."""
     from opentelemetry.sdk.instrumentation import InstrumentationScope
     from opentelemetry.sdk.trace import ReadableSpan
-    from opentelemetry.trace import SpanContext, SpanKind as OtelSpanKind, TraceFlags
+    from opentelemetry.trace import SpanContext, TraceFlags
+    from opentelemetry.trace import SpanKind as OtelSpanKind
     from opentelemetry.trace.status import Status, StatusCode
 
     ctx = SpanContext(
@@ -90,17 +91,12 @@ def _to_otel_span(span: "Span", resource: Any) -> Any:
     events: list[Any] = []
     try:
         import opentelemetry.sdk.trace as _sdk
+
         OtelEvent = getattr(_sdk, "Event", None)
         if OtelEvent is not None:
             for ev in span.events:
-                ev_attrs = {
-                    k: v
-                    for k, v in ev.attributes.items()
-                    if isinstance(v, (str, int, float, bool))
-                }
-                events.append(
-                    OtelEvent(name=ev.name, attributes=ev_attrs, timestamp=_ns(ev.timestamp))
-                )
+                ev_attrs = {k: v for k, v in ev.attributes.items() if isinstance(v, (str, int, float, bool))}
+                events.append(OtelEvent(name=ev.name, attributes=ev_attrs, timestamp=_ns(ev.timestamp)))
     except Exception:
         events = []
 
@@ -143,9 +139,7 @@ def export_otel(
         from opentelemetry.sdk.resources import SERVICE_NAME, Resource
         from opentelemetry.sdk.trace.export import SpanExportResult
     except ImportError as exc:
-        raise ImportError(
-            "OTLP export requires keeto[otel]. Install with: pip install keeto[otel]"
-        ) from exc
+        raise ImportError("OTLP export requires keeto[otel]. Install with: pip install keeto[otel]") from exc
 
     resource = Resource.create({SERVICE_NAME: service_name})
     otel_spans = [_to_otel_span(span, resource) for trace in traces for span in trace.spans]

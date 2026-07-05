@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import time
-from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any, ClassVar
 
 from keeto.core.context import get_current_span_id, get_current_trace_id, new_span_id, new_trace_id
@@ -9,6 +7,8 @@ from keeto.core.span import Span, SpanKind, SpanStatus
 from keeto.plugins.base import Plugin
 
 if TYPE_CHECKING:
+    from datetime import datetime
+
     from keeto.core.monitor import Monitor
 
 
@@ -70,6 +70,7 @@ class _LiteLLMLogger:
             span.cost_usd = float(response_cost)
         elif span.input_tokens is not None and span.output_tokens is not None:
             from keeto._pricing import cost_usd
+
             span.cost_usd = cost_usd(provider, model, span.input_tokens, span.output_tokens)
 
         messages = kwargs.get("messages") or []
@@ -141,6 +142,7 @@ class LiteLLMPlugin(Plugin):
             return
         try:
             import litellm
+
             if self._logger in litellm.callbacks:
                 litellm.callbacks.remove(self._logger)
         except ImportError:

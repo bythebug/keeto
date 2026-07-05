@@ -14,7 +14,7 @@ Usage::
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from keeto.core.span import Span, SpanEvent, SpanKind, SpanStatus, Trace
@@ -44,8 +44,7 @@ class PostgresStorage:
                 import asyncpg  # type: ignore[import-untyped]
             except ImportError as exc:
                 raise ImportError(
-                    "PostgreSQL storage requires keeto[postgres]. "
-                    "Install with: pip install keeto[postgres]"
+                    "PostgreSQL storage requires keeto[postgres]. Install with: pip install keeto[postgres]"
                 ) from exc
             self._pool = await asyncpg.create_pool(
                 self._dsn,
@@ -92,32 +91,31 @@ class PostgresStorage:
 
     async def append(self, span: Span) -> None:
         pool = await self._get_pool()
-        async with pool.acquire() as conn:
-            async with conn.transaction():
-                await conn.execute(
-                    """
+        async with pool.acquire() as conn, conn.transaction():
+            await conn.execute(
+                """
                     INSERT INTO keeto_traces (trace_id, start_time, end_time)
                     VALUES ($1, $2, $3)
                     ON CONFLICT (trace_id) DO UPDATE
                         SET end_time = EXCLUDED.end_time
                     """,
-                    span.trace_id,
-                    span.start_time,
-                    span.end_time,
-                )
-                attrs_json = json.dumps(span.attributes)
-                events_json = json.dumps(
-                    [
-                        {
-                            "name": e.name,
-                            "timestamp": e.timestamp.isoformat(),
-                            "attributes": e.attributes,
-                        }
-                        for e in span.events
-                    ]
-                )
-                await conn.execute(
-                    """
+                span.trace_id,
+                span.start_time,
+                span.end_time,
+            )
+            attrs_json = json.dumps(span.attributes)
+            events_json = json.dumps(
+                [
+                    {
+                        "name": e.name,
+                        "timestamp": e.timestamp.isoformat(),
+                        "attributes": e.attributes,
+                    }
+                    for e in span.events
+                ]
+            )
+            await conn.execute(
+                """
                     INSERT INTO keeto_spans (
                         span_id, trace_id, parent_span_id, name, kind,
                         start_time, end_time, status, status_message,
@@ -138,25 +136,25 @@ class PostgresStorage:
                         attributes     = EXCLUDED.attributes,
                         events         = EXCLUDED.events
                     """,
-                    span.span_id,
-                    span.trace_id,
-                    span.parent_span_id,
-                    span.name,
-                    span.kind.value,
-                    span.start_time,
-                    span.end_time,
-                    span.status.value,
-                    span.status_message,
-                    span.provider,
-                    span.model,
-                    span.input_tokens,
-                    span.output_tokens,
-                    span.cached_tokens,
-                    span.reasoning_tokens,
-                    span.cost_usd,
-                    attrs_json,
-                    events_json,
-                )
+                span.span_id,
+                span.trace_id,
+                span.parent_span_id,
+                span.name,
+                span.kind.value,
+                span.start_time,
+                span.end_time,
+                span.status.value,
+                span.status_message,
+                span.provider,
+                span.model,
+                span.input_tokens,
+                span.output_tokens,
+                span.cached_tokens,
+                span.reasoning_tokens,
+                span.cost_usd,
+                attrs_json,
+                events_json,
+            )
 
     async def get_trace(self, trace_id: str) -> Trace | None:
         pool = await self._get_pool()
@@ -241,39 +239,36 @@ class PostgresStorage:
 # Row → model helpers
 # ---------------------------------------------------------------------------
 
+
 def _parse_dt(value: Any) -> datetime | None:
     if value is None:
         return None
     if isinstance(value, datetime):
-        return value if value.tzinfo else value.replace(tzinfo=timezone.utc)
+        return value if value.tzinfo else value.replace(tzinfo=UTC)
     dt = datetime.fromisoformat(str(value))
-    return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
+    return dt if dt.tzinfo else dt.replace(tzinfo=UTC)
 
 
 def _row_to_trace(row: Any) -> Trace:
-    start = _parse_dt(row["start_time"]) or datetime.now(timezone.utc)
+    start = _parse_dt(row["start_time"]) or datetime.now(UTC)
     end = _parse_dt(row["end_time"])
     return Trace(trace_id=row["trace_id"], start_time=start, end_time=end)
 
 
 def _row_to_span(row: Any) -> Span:
     attrs_raw = row["attributes"]
-    attributes: dict[str, Any] = (
-        json.loads(attrs_raw) if isinstance(attrs_raw, str) else (attrs_raw or {})
-    )
+    attributes: dict[str, Any] = json.loads(attrs_raw) if isinstance(attrs_raw, str) else (attrs_raw or {})
     events_raw = row["events"]
-    raw_events: list[dict[str, Any]] = (
-        json.loads(events_raw) if isinstance(events_raw, str) else (events_raw or [])
-    )
+    raw_events: list[dict[str, Any]] = json.loads(events_raw) if isinstance(events_raw, str) else (events_raw or [])
     events = [
         SpanEvent(
             name=e["name"],
-            timestamp=_parse_dt(e["timestamp"]) or datetime.now(timezone.utc),
+            timestamp=_parse_dt(e["timestamp"]) or datetime.now(UTC),
             attributes=e.get("attributes", {}),
         )
         for e in raw_events
     ]
-    start = _parse_dt(row["start_time"]) or datetime.now(timezone.utc)
+    start = _parse_dt(row["start_time"]) or datetime.now(UTC)
     end = _parse_dt(row["end_time"])
     return Span(
         span_id=row["span_id"],

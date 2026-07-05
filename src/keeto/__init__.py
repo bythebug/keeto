@@ -13,11 +13,11 @@ from keeto.core.span import Span, SpanKind, SpanStatus, Trace
 monitor = Monitor()
 
 __all__ = [
-    "__version__",
     "Monitor",
     "Span",
     "SpanKind",
     "SpanStatus",
     "Trace",
+    "__version__",
     "monitor",
 ]

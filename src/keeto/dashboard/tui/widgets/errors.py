@@ -4,11 +4,12 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from textual.app import ComposeResult
 from textual.widget import Widget
 from textual.widgets import Label
 
 if TYPE_CHECKING:
+    from textual.app import ComposeResult
+
     from keeto.storage.base import StorageBackend
 
 

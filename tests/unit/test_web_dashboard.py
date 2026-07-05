@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import asyncio
-import json
 from datetime import timedelta
 
 import pytest
@@ -19,10 +18,10 @@ from keeto.dashboard.web.server import (
 )
 from keeto.storage.memory import MemoryStorage
 
-
 # ---------------------------------------------------------------------------
 # Fixtures / helpers
 # ---------------------------------------------------------------------------
+
 
 def _make_trace(
     trace_id: str = "abc123",
@@ -57,6 +56,7 @@ def _make_trace(
 
 def _seed(storage: MemoryStorage, *traces: Trace) -> None:
     """Synchronously append traces to storage."""
+
     async def _append_all() -> None:
         for t in traces:
             for s in t.spans:
@@ -80,9 +80,11 @@ def client(storage: MemoryStorage) -> TestClient:
 # #31 — app instantiation
 # ---------------------------------------------------------------------------
 
+
 class TestAppInstantiates:
     def test_create_app_returns_fastapi(self, storage: MemoryStorage) -> None:
         from fastapi import FastAPI
+
         app = create_app(storage)
         assert isinstance(app, FastAPI)
 
@@ -99,6 +101,7 @@ class TestAppInstantiates:
 # ---------------------------------------------------------------------------
 # #32 — trace list page
 # ---------------------------------------------------------------------------
+
 
 class TestGetRoot:
     def test_returns_200(self, client: TestClient) -> None:
@@ -148,18 +151,15 @@ class TestApiTracesWithData:
 # #33 — trace detail
 # ---------------------------------------------------------------------------
 
+
 class TestApiTraceDetail:
-    def test_returns_200_for_known_trace(
-        self, client: TestClient, storage: MemoryStorage
-    ) -> None:
+    def test_returns_200_for_known_trace(self, client: TestClient, storage: MemoryStorage) -> None:
         t = _make_trace("deadbeef1234")
         _seed(storage, t)
         r = client.get(f"/api/traces/{t.trace_id}")
         assert r.status_code == 200
 
-    def test_contains_trace_id(
-        self, client: TestClient, storage: MemoryStorage
-    ) -> None:
+    def test_contains_trace_id(self, client: TestClient, storage: MemoryStorage) -> None:
         t = _make_trace("cafebabe5678")
         _seed(storage, t)
         r = client.get(f"/api/traces/{t.trace_id}")
@@ -169,9 +169,7 @@ class TestApiTraceDetail:
         r = client.get("/api/traces/doesnotexist")
         assert r.status_code == 404
 
-    def test_contains_model_and_provider(
-        self, client: TestClient, storage: MemoryStorage
-    ) -> None:
+    def test_contains_model_and_provider(self, client: TestClient, storage: MemoryStorage) -> None:
         t = _make_trace("a1b2c3d4e5f6", model="claude-3-5-sonnet", provider="anthropic")
         _seed(storage, t)
         r = client.get(f"/api/traces/{t.trace_id}")
@@ -183,6 +181,7 @@ class TestApiTraceDetail:
 # #35 — metrics endpoint
 # ---------------------------------------------------------------------------
 
+
 class TestApiMetrics:
     def test_returns_200(self, client: TestClient) -> None:
         r = client.get("/api/metrics")
@@ -191,8 +190,14 @@ class TestApiMetrics:
     def test_required_keys_present(self, client: TestClient) -> None:
         r = client.get("/api/metrics")
         d = r.json()
-        for key in ("total_cost_usd", "today_cost_usd", "total_traces",
-                    "avg_latency_ms", "error_count", "model_breakdown"):
+        for key in (
+            "total_cost_usd",
+            "today_cost_usd",
+            "total_traces",
+            "avg_latency_ms",
+            "error_count",
+            "model_breakdown",
+        ):
             assert key in d, f"missing key: {key}"
 
     def test_empty_storage_zeros(self, client: TestClient) -> None:
@@ -201,20 +206,15 @@ class TestApiMetrics:
         assert d["total_cost_usd"] == 0
         assert d["model_breakdown"] == []
 
-    def test_model_breakdown_populated(
-        self, client: TestClient, storage: MemoryStorage
-    ) -> None:
+    def test_model_breakdown_populated(self, client: TestClient, storage: MemoryStorage) -> None:
         _seed(storage, _make_trace("t1", model="gpt-4o", cost_usd=0.002))
-        _seed(storage, _make_trace("t2", model="claude-3-5", provider="anthropic",
-                                   cost_usd=0.004))
+        _seed(storage, _make_trace("t2", model="claude-3-5", provider="anthropic", cost_usd=0.004))
         d = client.get("/api/metrics").json()
         models = {m["model"] for m in d["model_breakdown"]}
         assert "gpt-4o" in models
         assert "claude-3-5" in models
 
-    def test_error_count(
-        self, client: TestClient, storage: MemoryStorage
-    ) -> None:
+    def test_error_count(self, client: TestClient, storage: MemoryStorage) -> None:
         _seed(storage, _make_trace("t1", error=True))
         _seed(storage, _make_trace("t2", error=False))
         d = client.get("/api/metrics").json()
@@ -225,10 +225,9 @@ class TestApiMetrics:
 # #36 — errors_only filter
 # ---------------------------------------------------------------------------
 
+
 class TestApiTracesErrorsOnly:
-    def test_only_error_traces_returned(
-        self, client: TestClient, storage: MemoryStorage
-    ) -> None:
+    def test_only_error_traces_returned(self, client: TestClient, storage: MemoryStorage) -> None:
         ok_trace = _make_trace("oktraceabc1", error=False)
         err_trace = _make_trace("errtracedef2", error=True)
         _seed(storage, ok_trace, err_trace)
@@ -236,9 +235,7 @@ class TestApiTracesErrorsOnly:
         assert "errtrace" in r.text
         assert "oktrace" not in r.text
 
-    def test_no_errors_shows_placeholder(
-        self, client: TestClient, storage: MemoryStorage
-    ) -> None:
+    def test_no_errors_shows_placeholder(self, client: TestClient, storage: MemoryStorage) -> None:
         _seed(storage, _make_trace("t1", error=False))
         r = client.get("/api/traces?errors_only=1")
         assert "No errors" in r.text
@@ -248,14 +245,14 @@ class TestApiTracesErrorsOnly:
 # #37 — recommendations
 # ---------------------------------------------------------------------------
 
+
 class TestRecommendations:
     def test_no_data_message(self) -> None:
         html = _recommendations_html([])
         assert "No data" in html
 
     def test_all_ok_message(self) -> None:
-        traces = [_make_trace(f"t{i}", latency_ms=200.0, cost_usd=0.001)
-                  for i in range(3)]
+        traces = [_make_trace(f"t{i}", latency_ms=200.0, cost_usd=0.001) for i in range(3)]
         html = _recommendations_html(traces)
         assert "looking good" in html.lower() or "No recommendations" in html
 
@@ -283,6 +280,7 @@ class TestRecommendations:
 # ---------------------------------------------------------------------------
 # Fragment builder unit tests
 # ---------------------------------------------------------------------------
+
 
 class TestTraceRows:
     def test_empty(self) -> None:

@@ -1,10 +1,14 @@
 from __future__ import annotations
 
 import asyncio
+import contextlib
 from collections import deque
-from datetime import datetime
+from typing import TYPE_CHECKING
 
 from keeto.core.span import Span, Trace
+
+if TYPE_CHECKING:
+    from datetime import datetime
 
 
 class MemoryStorage:
@@ -57,17 +61,11 @@ class MemoryStorage:
 
     async def purge(self, older_than: datetime) -> int:
         async with self._lock:
-            to_delete = [
-                tid
-                for tid, trace in self._traces.items()
-                if trace.start_time < older_than
-            ]
+            to_delete = [tid for tid, trace in self._traces.items() if trace.start_time < older_than]
             for tid in to_delete:
                 del self._traces[tid]
-                try:
+                with contextlib.suppress(ValueError):
                     self._order.remove(tid)
-                except ValueError:
-                    pass
             return len(to_delete)
 
     async def close(self) -> None:

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -20,7 +20,7 @@ from keeto.exporters.langsmith import (
 
 
 def _make_trace() -> Trace:
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     span = Span(
         trace_id="a" * 32,
         span_id="b" * 16,
@@ -60,7 +60,7 @@ class TestSpanToRun:
         assert usage["completion_tokens"] == 50
 
     def test_error_mapped(self) -> None:
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         span = Span(trace_id="a" * 32, span_id="b" * 16, name="test", kind=SpanKind.LLM, start_time=now)
         span.finish(status=SpanStatus.ERROR, status_message="timeout")
         assert _span_to_run(span, "keeto")["error"] == "timeout"
@@ -74,13 +74,13 @@ class TestSpanToRun:
         assert run["session_name"] == "my-project"
 
     def test_tool_run_type(self) -> None:
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         span = Span(trace_id="a" * 32, span_id="b" * 16, name="search", kind=SpanKind.TOOL, start_time=now)
         span.finish()
         assert _span_to_run(span, "keeto")["run_type"] == "tool"
 
     def test_retrieval_run_type(self) -> None:
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         span = Span(trace_id="a" * 32, span_id="b" * 16, name="retrieve", kind=SpanKind.RETRIEVAL, start_time=now)
         span.finish()
         assert _span_to_run(span, "keeto")["run_type"] == "retriever"
@@ -95,7 +95,7 @@ class TestRunToSpan:
             "run_type": "llm",
             "inputs": {"messages": [{"role": "user", "content": "hi"}]},
             "outputs": {"output": "Hello!"},
-            "start_time": datetime.now(timezone.utc).isoformat(),
+            "start_time": datetime.now(UTC).isoformat(),
             "end_time": None,
             "error": None,
             "extra": {
@@ -148,9 +148,8 @@ class TestExportLangsmithJson:
 
     def test_no_langsmith_package_raises(self) -> None:
         # No path → tries API upload → needs langsmith package
-        with patch.dict("sys.modules", {"langsmith": None}):  # type: ignore[dict-item]
-            with pytest.raises(ImportError, match="langsmith"):
-                export_langsmith([_make_trace()])
+        with patch.dict("sys.modules", {"langsmith": None}), pytest.raises(ImportError, match="langsmith"):  # type: ignore[dict-item]
+            export_langsmith([_make_trace()])
 
 
 class TestImportFromLangsmith:
@@ -164,7 +163,7 @@ class TestImportFromLangsmith:
             "run_type": "llm",
             "inputs": {},
             "outputs": {},
-            "start_time": datetime.now(timezone.utc).isoformat(),
+            "start_time": datetime.now(UTC).isoformat(),
             "end_time": None,
             "error": None,
             "extra": {},
@@ -191,7 +190,7 @@ class TestImportFromLangsmith:
                 "run_type": "llm",
                 "inputs": {},
                 "outputs": {},
-                "start_time": datetime.now(timezone.utc).isoformat(),
+                "start_time": datetime.now(UTC).isoformat(),
                 "end_time": None,
                 "error": None,
                 "extra": {},
@@ -212,6 +211,5 @@ class TestImportFromLangsmith:
         assert len(traces[0].spans) == 3
 
     def test_import_requires_langsmith_package(self) -> None:
-        with patch.dict("sys.modules", {"langsmith": None}):  # type: ignore[dict-item]
-            with pytest.raises(ImportError, match="langsmith"):
-                import_from_langsmith("project")
+        with patch.dict("sys.modules", {"langsmith": None}), pytest.raises(ImportError, match="langsmith"):  # type: ignore[dict-item]
+            import_from_langsmith("project")

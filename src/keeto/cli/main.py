@@ -5,17 +5,20 @@ from __future__ import annotations
 import asyncio
 import json
 import sys
-from enum import Enum
+from enum import StrEnum
 from pathlib import Path
-from typing import Annotated, Optional
+from typing import Annotated
 
 try:
     import typer
+    from rich import box
     from rich.console import Console
     from rich.table import Table
-    from rich import box
 except ImportError as exc:
     raise ImportError("CLI requires typer and rich. Install with: pip install keeto[dev]") from exc
+
+import contextlib
+from datetime import UTC
 
 from keeto._version import __version__
 
@@ -35,7 +38,7 @@ console = Console()
 _DEFAULT_DB_PATHS = [Path("keeto.db"), Path.home() / ".keeto" / "keeto.db"]
 
 DbOption = Annotated[
-    Optional[Path],
+    Path | None,
     typer.Option(
         "--db",
         help="Path to keeto SQLite database (default: ./keeto.db or ~/.keeto/keeto.db).",
@@ -45,7 +48,7 @@ DbOption = Annotated[
 ]
 
 
-def _resolve_db(db: Optional[Path]) -> Path:
+def _resolve_db(db: Path | None) -> Path:
     if db is not None:
         if not db.exists():
             console.print(f"[red]Database not found:[/red] {db}")
@@ -67,10 +70,9 @@ def _open_storage(db: Path):  # type: ignore[return]
         from keeto.storage.sqlite import SQLiteStorage
     except ImportError:
         console.print(
-            "[red]SQLite storage requires aiosqlite.[/red] "
-            "Install with: [bold]pip install keeto[sqlite][/bold]"
+            "[red]SQLite storage requires aiosqlite.[/red] Install with: [bold]pip install keeto[sqlite][/bold]"
         )
-        raise typer.Exit(1)
+        raise typer.Exit(1) from None
     return SQLiteStorage(str(db))
 
 
@@ -94,7 +96,7 @@ def version() -> None:
 # ---------------------------------------------------------------------------
 
 
-class OutputFormat(str, Enum):
+class OutputFormat(StrEnum):
     table = "table"
     json = "json"
 
@@ -103,8 +105,8 @@ class OutputFormat(str, Enum):
 def traces(
     db: DbOption = None,
     limit: Annotated[int, typer.Option("--limit", "-n", help="Max traces to show.")] = 20,
-    provider: Annotated[Optional[str], typer.Option("--provider", help="Filter by provider.")] = None,
-    model: Annotated[Optional[str], typer.Option("--model", help="Filter by model name (substring).")] = None,
+    provider: Annotated[str | None, typer.Option("--provider", help="Filter by provider.")] = None,
+    model: Annotated[str | None, typer.Option("--model", help="Filter by model name (substring).")] = None,
     errors_only: Annotated[bool, typer.Option("--errors", help="Show only failed traces.")] = False,
     format: Annotated[OutputFormat, typer.Option("--format", "-f", help="Output format.")] = OutputFormat.table,
 ) -> None:
@@ -189,7 +191,7 @@ def traces(
 # ---------------------------------------------------------------------------
 
 
-class DashboardMode(str, Enum):
+class DashboardMode(StrEnum):
     tui = "tui"
     web = "web"
     rich = "rich"
@@ -211,6 +213,7 @@ def dashboard(
     if mode == DashboardMode.rich:
         all_traces = asyncio.run(storage.list_traces(limit=200))
         from keeto.dashboard.rich_summary import render
+
         render(all_traces, console=console)
         return
 
@@ -218,10 +221,8 @@ def dashboard(
         try:
             from keeto.dashboard.tui.app import KeetoApp
         except ImportError:
-            console.print(
-                "[red]TUI requires textual.[/red] Install with: [bold]pip install keeto[tui][/bold]"
-            )
-            raise typer.Exit(1)
+            console.print("[red]TUI requires textual.[/red] Install with: [bold]pip install keeto[tui][/bold]")
+            raise typer.Exit(1) from None
         KeetoApp(storage=storage).run()
         return
 
@@ -232,7 +233,7 @@ def dashboard(
             console.print(
                 "[red]Web dashboard requires fastapi.[/red] Install with: [bold]pip install keeto[web][/bold]"
             )
-            raise typer.Exit(1)
+            raise typer.Exit(1) from None
         console.print(f"[bold green]Starting web dashboard on http://localhost:{port}[/bold green]")
         start_web_dashboard(storage, port=port, block=True)
 
@@ -262,9 +263,7 @@ def replay(
             console.print(f"[red]Trace not found:[/red] {trace_id!r}")
             raise typer.Exit(1)
         if len(matches) > 1:
-            console.print(
-                f"[yellow]Ambiguous prefix — {len(matches)} matches:[/yellow]"
-            )
+            console.print(f"[yellow]Ambiguous prefix — {len(matches)} matches:[/yellow]")
             for m in matches[:5]:
                 console.print(f"  {m.trace_id}")
             raise typer.Exit(1)
@@ -304,7 +303,7 @@ def replay(
             console.print(f"\n[dim]Response:[/dim] {text[:200]}")
     except Exception as exc:
         console.print(f"[red]Replay failed:[/red] {exc}")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from exc
 
 
 # ---------------------------------------------------------------------------
@@ -312,7 +311,7 @@ def replay(
 # ---------------------------------------------------------------------------
 
 
-class ExportFormat(str, Enum):
+class ExportFormat(StrEnum):
     json = "json"
     csv = "csv"
     otel = "otel"
@@ -322,29 +321,29 @@ class ExportFormat(str, Enum):
 def export(
     db: DbOption = None,
     format: Annotated[
-        Optional[ExportFormat],
+        ExportFormat | None,
         typer.Option("--format", "-f", help="Export format: json, csv, or otel."),
     ] = None,
     output: Annotated[
-        Optional[Path],
+        Path | None,
         typer.Option("--output", "-o", help="Output file path (stdout if omitted)."),
     ] = None,
-    since: Annotated[Optional[str], typer.Option("--since", help="Start time filter (ISO-8601).")] = None,
-    until: Annotated[Optional[str], typer.Option("--until", help="End time filter (ISO-8601).")] = None,
+    since: Annotated[str | None, typer.Option("--since", help="Start time filter (ISO-8601).")] = None,
+    until: Annotated[str | None, typer.Option("--until", help="End time filter (ISO-8601).")] = None,
     limit: Annotated[int, typer.Option("--limit", "-n", help="Max traces to export.")] = 10_000,
     endpoint: Annotated[
-        Optional[str],
+        str | None,
         typer.Option("--endpoint", help="OTLP endpoint URL (for --format otel)."),
     ] = None,
 ) -> None:
     """Export traces to JSON, CSV, or OpenTelemetry OTLP."""
-    from datetime import datetime, timezone
+    from datetime import datetime
 
-    def _parse_dt(v: str | None) -> "datetime | None":
+    def _parse_dt(v: str | None) -> datetime | None:
         if v is None:
             return None
         dt = datetime.fromisoformat(v)
-        return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
+        return dt if dt.tzinfo else dt.replace(tzinfo=UTC)
 
     resolved = _resolve_db(db)
     storage = _open_storage(resolved)
@@ -353,10 +352,8 @@ def export(
     effective_format = format
     if effective_format is None and output is not None:
         ext = output.suffix.lstrip(".").lower()
-        try:
+        with contextlib.suppress(ValueError):
             effective_format = ExportFormat(ext)
-        except ValueError:
-            pass
     if effective_format is None:
         effective_format = ExportFormat.json
 
@@ -368,12 +365,15 @@ def export(
 
     if effective_format == ExportFormat.json:
         from keeto.exporters.json import export_json
+
         export_json(all_traces, out_path)
     elif effective_format == ExportFormat.csv:
         from keeto.exporters.csv import export_csv
+
         export_csv(all_traces, out_path)
     elif effective_format == ExportFormat.otel:
         from keeto.exporters.otel import export_otel
+
         kwargs: dict = {}
         if endpoint:
             kwargs["endpoint"] = endpoint
@@ -383,9 +383,7 @@ def export(
         raise typer.Exit(1)
 
     if output:
-        console.print(
-            f"[green]Exported {len(all_traces)} trace(s)[/green] → {output} ({effective_format.value})"
-        )
+        console.print(f"[green]Exported {len(all_traces)} trace(s)[/green] → {output} ({effective_format.value})")
 
 
 # ---------------------------------------------------------------------------
@@ -445,6 +443,7 @@ def _load_config() -> dict:
     if not _CONFIG_PATH.exists():
         return {}
     import tomllib
+
     return tomllib.loads(_CONFIG_PATH.read_text(encoding="utf-8"))
 
 
@@ -574,8 +573,16 @@ def doctor(db: DbOption = None) -> None:
     # ---- AI SDKs ----
     console.print()
     console.print("  [bold]AI SDK detection[/bold]")
-    sdks = ["openai", "anthropic", "langchain", "llama_index", "litellm",
-            "google.generativeai", "ollama", "pydantic_ai"]
+    sdks = [
+        "openai",
+        "anthropic",
+        "langchain",
+        "llama_index",
+        "litellm",
+        "google.generativeai",
+        "ollama",
+        "pydantic_ai",
+    ]
     found_any = False
     for sdk in sdks:
         try:
@@ -604,8 +611,9 @@ def doctor(db: DbOption = None) -> None:
         console.print(f"  {ok}  {db_path}  ({size_kb:.1f} KB)")
         try:
             from keeto.storage.sqlite import SQLiteStorage
+
             storage = SQLiteStorage(str(db_path))
-            traces = asyncio.run(storage.list_traces(limit=1))
+            asyncio.run(storage.list_traces(limit=1))
             asyncio.run(storage.close())
             console.print(f"  {ok}  Database readable")
         except Exception as exc:
@@ -628,6 +636,7 @@ def doctor(db: DbOption = None) -> None:
     console.print()
     console.print("  [bold]Environment variables[/bold]")
     import os
+
     env_vars = {
         "OPENAI_API_KEY": "OpenAI",
         "ANTHROPIC_API_KEY": "Anthropic",
@@ -640,7 +649,7 @@ def doctor(db: DbOption = None) -> None:
             masked = val[:4] + "…" if len(val) > 4 else "set"
             console.print(f"  {ok}  {var}={masked}  [dim]({label})[/dim]")
         else:
-            icon = warn if "API_KEY" in var else f"[dim]-[/dim]"
+            icon = warn if "API_KEY" in var else "[dim]-[/dim]"
             console.print(f"  {icon}  {var}  [dim](not set)[/dim]")
 
     # ---- Plugin registry ----
@@ -648,6 +657,7 @@ def doctor(db: DbOption = None) -> None:
     console.print("  [bold]Plugin registry[/bold]")
     try:
         import importlib.metadata as _meta
+
         eps = list(_meta.entry_points(group="keeto.plugins"))
         if eps:
             for ep in eps:
@@ -696,7 +706,7 @@ def compare(
         trace_b = _resolve_trace(storage, id2)
     except ValueError as exc:
         console.print(f"[red]{exc}[/red]")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from exc
 
     if trace_a is None:
         console.print(f"[red]Trace not found:[/red] {id1!r}")
@@ -711,6 +721,7 @@ def compare(
 
     if json_output:
         import dataclasses
+
         sys.stdout.write(json.dumps(dataclasses.asdict(cmp), indent=2, default=str))
         sys.stdout.write("\n")
         return
@@ -747,10 +758,12 @@ def compare(
         cost_delta,
     )
 
-    in_delta = _delta_style(cmp.input_tokens_b - cmp.input_tokens_a, " tok") if cmp.input_tokens_a or cmp.input_tokens_b else "—"
+    has_in = cmp.input_tokens_a or cmp.input_tokens_b
+    in_delta = _delta_style(cmp.input_tokens_b - cmp.input_tokens_a, " tok") if has_in else "—"
     table.add_row("Input tokens", str(cmp.input_tokens_a), str(cmp.input_tokens_b), in_delta)
 
-    out_delta = _delta_style(cmp.output_tokens_b - cmp.output_tokens_a, " tok") if cmp.output_tokens_a or cmp.output_tokens_b else "—"
+    has_out = cmp.output_tokens_a or cmp.output_tokens_b
+    out_delta = _delta_style(cmp.output_tokens_b - cmp.output_tokens_a, " tok") if has_out else "—"
     table.add_row("Output tokens", str(cmp.output_tokens_a), str(cmp.output_tokens_b), out_delta)
 
     console.print(table)

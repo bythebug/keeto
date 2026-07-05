@@ -11,13 +11,17 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, Any
 
-import httpx
-
 from keeto._pricing import cost_usd
-from keeto.integrations._httpx import RecordingAsyncTransport, RecordingSyncTransport, _try_parse_json
+from keeto.integrations._httpx import (
+    RecordingAsyncTransport,
+    RecordingSyncTransport,
+    _try_parse_json,
+)
 from keeto.plugins.base import Plugin
 
 if TYPE_CHECKING:
+    import httpx
+
     from keeto.core.monitor import Monitor
     from keeto.core.span import Span
 
@@ -142,8 +146,7 @@ class OpenAIPlugin(Plugin):
 
             # Issue #56: multimodal detection
             has_images = any(
-                isinstance(m.get("content"), list)
-                and any(c.get("type") == "image_url" for c in m["content"])
+                isinstance(m.get("content"), list) and any(c.get("type") == "image_url" for c in m["content"])
                 for m in messages
                 if isinstance(m, dict)
             )
@@ -159,9 +162,9 @@ class OpenAIPlugin(Plugin):
             tools = req_body.get("tools") or req_body.get("functions")
             if tools:
                 span.set_attribute("llm.tool_count", len(tools))
-                span.set_attribute("llm.tool_names", [
-                    t.get("function", t).get("name") for t in tools if isinstance(t, dict)
-                ])
+                span.set_attribute(
+                    "llm.tool_names", [t.get("function", t).get("name") for t in tools if isinstance(t, dict)]
+                )
 
         resp_body = _try_parse_json(response.content)
         if resp_body and "usage" in resp_body:
@@ -198,15 +201,18 @@ class OpenAIPlugin(Plugin):
                 tool_calls = msg.get("tool_calls") or []
                 if tool_calls:
                     span.set_attribute("llm.tool_calls_count", len(tool_calls))
-                    span.set_attribute("llm.tool_calls", [
-                        {
-                            "id": tc.get("id"),
-                            "name": tc.get("function", {}).get("name"),
-                            "arguments": tc.get("function", {}).get("arguments"),
-                        }
-                        for tc in tool_calls
-                        if isinstance(tc, dict)
-                    ])
+                    span.set_attribute(
+                        "llm.tool_calls",
+                        [
+                            {
+                                "id": tc.get("id"),
+                                "name": tc.get("function", {}).get("name"),
+                                "arguments": tc.get("function", {}).get("arguments"),
+                            }
+                            for tc in tool_calls
+                            if isinstance(tc, dict)
+                        ],
+                    )
 
                 # Issue #58: parallel tool calls (multiple tool_calls in one choice)
                 if len(tool_calls) > 1:

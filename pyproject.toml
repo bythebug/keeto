@@ -88,7 +88,7 @@ packages = ["src/keeto"]
 # ---------------------------------------------------------------------------
 [tool.ruff]
 src = ["src"]
-line-length = 100
+line-length = 120
 target-version = "py311"
 
 [tool.ruff.lint]
@@ -100,13 +100,12 @@ select = [
     "B",        # flake8-bugbear
     "C4",       # flake8-comprehensions
     "SIM",      # flake8-simplify
-    "TCH",      # flake8-type-checking
-    "ANN",      # flake8-annotations
     "RUF",      # ruff-specific
 ]
 ignore = [
-    "ANN101",   # missing type annotation for self
-    "ANN102",   # missing type annotation for cls
+    "RUF001",   # ambiguous unicode in string literals (em-dash in UI strings is intentional)
+    "RUF002",   # ambiguous unicode in docstrings (em-dash is intentional)
+    "RUF003",   # ambiguous unicode in comments
 ]
 
 [tool.ruff.lint.isort]

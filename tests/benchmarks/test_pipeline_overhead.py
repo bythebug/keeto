@@ -9,11 +9,8 @@ Run with:
 
 from __future__ import annotations
 
-import asyncio
-import json
 import time
-from datetime import datetime, timezone
-from unittest.mock import AsyncMock, patch
+from datetime import UTC, datetime
 
 import pytest
 
@@ -21,13 +18,13 @@ from keeto.core.monitor import Monitor
 from keeto.core.span import Span, SpanKind, SpanStatus
 from keeto.storage.memory import MemoryStorage
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _make_span(i: int = 0) -> Span:
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     span = Span(
         trace_id=f"{'a' * 30}{i:02d}"[:32],
         span_id=f"{'b' * 14}{i:02d}"[:16],
@@ -54,6 +51,7 @@ def _make_monitor() -> Monitor:
 # Baseline: emit spans into a Monitor (pipeline overhead only)
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.benchmark(group="pipeline")
 def test_emit_overhead(benchmark: pytest.FixtureRequest) -> None:
     """Benchmark the monitor.emit() hot path with 100 spans."""
@@ -71,6 +69,7 @@ def test_emit_overhead(benchmark: pytest.FixtureRequest) -> None:
 # ---------------------------------------------------------------------------
 # Overhead measurement — keeto vs no-keeto wall time
 # ---------------------------------------------------------------------------
+
 
 def _run_n_emits(n: int = 500) -> float:
     """Return wall-clock seconds for n span emissions."""
@@ -120,20 +119,17 @@ def test_overhead_under_five_percent() -> None:
     # Absolute cap: each emit must be < 1 ms (AI calls are 100–30 000 ms)
     per_emit_ms = (keeto_time / n) * 1000
     assert per_emit_ms < 1.0, (
-        f"Per-emit overhead {per_emit_ms:.4f} ms exceeds 1 ms hard cap. "
-        "The hot path must stay non-blocking."
+        f"Per-emit overhead {per_emit_ms:.4f} ms exceeds 1 ms hard cap. The hot path must stay non-blocking."
     )
 
     # Log for visibility (not a failure)
-    print(
-        f"\nOverhead ratio (keeto/baseline): {overhead_ratio:.2f}x  "
-        f"| per-emit: {per_emit_ms:.4f} ms"
-    )
+    print(f"\nOverhead ratio (keeto/baseline): {overhead_ratio:.2f}x  | per-emit: {per_emit_ms:.4f} ms")
 
 
 # ---------------------------------------------------------------------------
 # Async storage benchmark
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.asyncio
 async def test_memory_storage_append_throughput() -> None:
@@ -148,7 +144,5 @@ async def test_memory_storage_append_throughput() -> None:
 
     per_span_ms = (elapsed / 500) * 1000
     throughput = 500 / elapsed
-    assert throughput >= 5_000, (
-        f"MemoryStorage throughput {throughput:.0f} spans/s < 5 000 spans/s minimum"
-    )
+    assert throughput >= 5_000, f"MemoryStorage throughput {throughput:.0f} spans/s < 5 000 spans/s minimum"
     print(f"\nMemoryStorage: {throughput:.0f} spans/s | {per_span_ms:.4f} ms/span")

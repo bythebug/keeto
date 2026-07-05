@@ -9,15 +9,17 @@ Panels:
 
 from __future__ import annotations
 
+import contextlib
 from typing import TYPE_CHECKING, ClassVar
 
-from textual.app import ComposeResult
 from textual.widget import Widget
 from textual.widgets import DataTable, Label, Static
 
 from keeto.dashboard.tui.widgets._utils import _fmt_lat
 
 if TYPE_CHECKING:
+    from textual.app import ComposeResult
+
     from keeto.core.span import Trace
     from keeto.storage.base import StorageBackend
 
@@ -31,13 +33,13 @@ _HIST_HALF = "▌"
 
 # Bucket edges in ms
 _BUCKETS: list[tuple[float, float, str]] = [
-    (0,     100,   "<100ms"),
-    (100,   250,   "100-250ms"),
-    (250,   500,   "250-500ms"),
-    (500,   1000,  "500ms-1s"),
-    (1000,  2000,  "1-2s"),
-    (2000,  5000,  "2-5s"),
-    (5000,  float("inf"), ">5s"),
+    (0, 100, "<100ms"),
+    (100, 250, "100-250ms"),
+    (250, 500, "250-500ms"),
+    (500, 1000, "500ms-1s"),
+    (1000, 2000, "1-2s"),
+    (2000, 5000, "2-5s"),
+    (5000, float("inf"), ">5s"),
 ]
 
 
@@ -67,7 +69,7 @@ def _build_histogram(latencies: list[float], bar_cols: int = 28) -> str:
         return "(no data)"
 
     lines: list[str] = []
-    for (_, _, label), count in zip(_BUCKETS, counts):
+    for (_, _, label), count in zip(_BUCKETS, counts, strict=False):
         filled = round(count / max_count * bar_cols)
         bar = _HIST_BAR * filled
         pct = f"{count / len(latencies) * 100:4.1f}%"
@@ -78,6 +80,7 @@ def _build_histogram(latencies: list[float], bar_cols: int = 28) -> str:
 # ---------------------------------------------------------------------------
 # Stat chip (reuse the same pattern as CostView)
 # ---------------------------------------------------------------------------
+
 
 class _PerfChip(Static):
     DEFAULT_CSS = """
@@ -100,15 +103,14 @@ class _PerfChip(Static):
         yield Label("[bold]—[/bold]", markup=True, id=self._chip_id)
 
     def set_value(self, value: str) -> None:
-        try:
+        with contextlib.suppress(Exception):
             self.query_one(f"#{self._chip_id}").update(f"[bold]{value}[/bold]")
-        except Exception:
-            pass
 
 
 # ---------------------------------------------------------------------------
 # PerformanceView
 # ---------------------------------------------------------------------------
+
 
 class PerformanceView(Widget):
     DEFAULT_CSS: ClassVar[str] = """
@@ -150,34 +152,32 @@ class PerformanceView(Widget):
     """
 
     _MODEL_COLS: ClassVar[list[tuple[str, str, int]]] = [
-        ("Model",    "model",   22),
+        ("Model", "model", 22),
         ("Provider", "provider", 9),
-        ("Requests", "req",      9),
-        ("Min",      "min",      9),
-        ("P50",      "p50",      9),
-        ("P95",      "p95",      9),
-        ("P99",      "p99",      9),
-        ("Max",      "max",      9),
+        ("Requests", "req", 9),
+        ("Min", "min", 9),
+        ("P50", "p50", 9),
+        ("P95", "p95", 9),
+        ("P99", "p99", 9),
+        ("Max", "max", 9),
     ]
 
-    def __init__(self, storage: "StorageBackend") -> None:
+    def __init__(self, storage: StorageBackend) -> None:
         super().__init__()
         self._storage = storage
 
     def compose(self) -> ComposeResult:
         with Static(id="perf-chips"):
-            yield _PerfChip("P50",  "chip-p50")
-            yield _PerfChip("P95",  "chip-p95")
-            yield _PerfChip("P99",  "chip-p99")
+            yield _PerfChip("P50", "chip-p50")
+            yield _PerfChip("P95", "chip-p95")
+            yield _PerfChip("P99", "chip-p99")
             yield _PerfChip("Mean", "chip-mean")
 
         yield Label("LATENCY HISTOGRAM", id="hist-label")
         yield Label("(no data)", id="histogram", markup=True)
 
         yield Label("PER-MODEL LATENCY", id="model-label")
-        table: DataTable[str] = DataTable(
-            id="perf-table", cursor_type="row", zebra_stripes=True
-        )
+        table: DataTable[str] = DataTable(id="perf-table", cursor_type="row", zebra_stripes=True)
         yield table
         yield Label(
             "[dim]No traces yet — start making AI calls[/dim]",
@@ -190,11 +190,9 @@ class PerformanceView(Widget):
         for label, key, width in self._MODEL_COLS:
             table.add_column(label, key=key, width=width)
 
-    def refresh_data(self, traces: list["Trace"]) -> None:
+    def refresh_data(self, traces: list[Trace]) -> None:
         """Called every 2s by KeetoApp._poll_storage()."""
-        latencies: list[float] = [
-            t.latency_ms for t in traces if t.latency_ms is not None
-        ]
+        latencies: list[float] = [t.latency_ms for t in traces if t.latency_ms is not None]
         latencies.sort()
 
         # Update stat chips
@@ -210,7 +208,7 @@ class PerformanceView(Widget):
             ("chip-mean", mean),
         ]
         colors = ["green", "yellow", "red", "blue"]
-        for (chip_id, val), color in zip(chips, colors):
+        for (chip_id, val), color in zip(chips, colors, strict=False):
             txt = f"[{color}]{_fmt_lat(val)}[/{color}]" if val is not None else "—"
             try:
                 chip_label = self.query_one(f"#{chip_id}", Label)
@@ -220,10 +218,8 @@ class PerformanceView(Widget):
 
         # Update histogram
         hist_text = _build_histogram(latencies) if latencies else "(no data)"
-        try:
+        with contextlib.suppress(Exception):
             self.query_one("#histogram", Label).update(hist_text)
-        except Exception:
-            pass
 
         # Per-model breakdown
         model_lats: dict[str, dict[str, object]] = {}
@@ -243,10 +239,8 @@ class PerformanceView(Widget):
         incoming_keys = set(model_lats.keys())
 
         for key in existing_keys - incoming_keys:
-            try:
+            with contextlib.suppress(Exception):
                 table.remove_row(key)
-            except Exception:
-                pass
 
         for model, stats in sorted(model_lats.items()):
             lats: list[float] = sorted(stats["lats"])  # type: ignore[arg-type]
@@ -262,10 +256,8 @@ class PerformanceView(Widget):
             ]
             if model in existing_keys:
                 for col_idx, cell in enumerate(row_data):
-                    try:
+                    with contextlib.suppress(Exception):
                         table.update_cell(model, self._MODEL_COLS[col_idx][1], cell)
-                    except Exception:
-                        pass
             else:
                 table.add_row(*row_data, key=model)
 

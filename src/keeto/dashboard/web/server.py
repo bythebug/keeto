@@ -18,8 +18,8 @@ import re
 import threading
 import time
 import webbrowser
-from datetime import datetime, timezone
-from typing import TYPE_CHECKING, AsyncGenerator
+from datetime import UTC, datetime
+from typing import TYPE_CHECKING
 
 from fastapi import FastAPI, Query
 from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
@@ -28,6 +28,8 @@ from keeto.dashboard.tui.widgets._utils import _age, _fmt_cost, _fmt_lat, _fmt_t
 from keeto.dashboard.tui.widgets.timeline import build_waterfall
 
 if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator
+
     from keeto.storage.base import StorageBackend
 
 
@@ -365,10 +367,7 @@ def _error_rows(traces: list) -> str:  # type: ignore[type-arg]
 def _recommendations_html(traces: list) -> str:  # type: ignore[type-arg]
     items: list[str] = []
     if not traces:
-        return (
-            '<ul class="recommendations" id="recommendations">'
-            '<li class="muted">No data yet</li></ul>'
-        )
+        return '<ul class="recommendations" id="recommendations"><li class="muted">No data yet</li></ul>'
 
     total_cost = sum(t.total_cost_usd for t in traces)
     error_count = sum(1 for t in traces if t.has_error)
@@ -376,24 +375,15 @@ def _recommendations_html(traces: list) -> str:  # type: ignore[type-arg]
     slow = [lat for lat in lats if lat > 5000]
 
     if slow:
-        items.append(
-            f'<li class="badge-warn">&#9889; {len(slow)} request(s) exceed 5s'
-            " &mdash; consider streaming</li>"
-        )
+        items.append(f'<li class="badge-warn">&#9889; {len(slow)} request(s) exceed 5s &mdash; consider streaming</li>')
     if total_cost > 1.0:
         items.append(
-            f'<li class="badge-warn">&#128176; Total cost ${total_cost:.2f}'
-            " exceeds $1 &mdash; review model usage</li>"
+            f'<li class="badge-warn">&#128176; Total cost ${total_cost:.2f} exceeds $1 &mdash; review model usage</li>'
         )
     if error_count > 0:
-        items.append(
-            f'<li class="badge-err">&#9888; {error_count} error(s) detected'
-            " in this session</li>"
-        )
+        items.append(f'<li class="badge-err">&#9888; {error_count} error(s) detected in this session</li>')
     if not items:
-        items.append(
-            '<li class="badge-ok">&#10003; No recommendations &mdash; looking good!</li>'
-        )
+        items.append('<li class="badge-ok">&#10003; No recommendations &mdash; looking good!</li>')
 
     body = "\n".join(items)
     return f'<ul class="recommendations" id="recommendations">\n{body}\n</ul>'
@@ -434,7 +424,8 @@ def _trace_detail_html(trace) -> str:  # type: ignore[no-untyped-def]
 # App factory
 # ---------------------------------------------------------------------------
 
-def create_app(storage: "StorageBackend") -> FastAPI:
+
+def create_app(storage: StorageBackend) -> FastAPI:
     app = FastAPI(title="Keeto", docs_url=None, redoc_url=None)
 
     @app.get("/", response_class=HTMLResponse)
@@ -461,9 +452,7 @@ def create_app(storage: "StorageBackend") -> FastAPI:
     async def api_trace_detail(trace_id: str) -> HTMLResponse:
         trace = await storage.get_trace(trace_id)
         if trace is None:
-            return HTMLResponse(
-                '<div class="no-data">Trace not found</div>', status_code=404
-            )
+            return HTMLResponse('<div class="no-data">Trace not found</div>', status_code=404)
         return HTMLResponse(_trace_detail_html(trace))
 
     @app.get("/api/metrics")
@@ -471,12 +460,8 @@ def create_app(storage: "StorageBackend") -> FastAPI:
         traces = await storage.list_traces(limit=1000)
         total_cost = sum(t.total_cost_usd for t in traces)
 
-        midnight = datetime.now(timezone.utc).replace(
-            hour=0, minute=0, second=0, microsecond=0
-        )
-        today_cost = sum(
-            t.total_cost_usd for t in traces if t.start_time >= midnight
-        )
+        midnight = datetime.now(UTC).replace(hour=0, minute=0, second=0, microsecond=0)
+        today_cost = sum(t.total_cost_usd for t in traces if t.start_time >= midnight)
         lats = [t.latency_ms for t in traces if t.latency_ms is not None]
         avg_lat = sum(lats) / len(lats) if lats else 0.0
         error_count = sum(1 for t in traces if t.has_error)
@@ -495,19 +480,19 @@ def create_app(storage: "StorageBackend") -> FastAPI:
                 "cost": round(float(v["cost"]), 6),
                 "requests": int(v["requests"]),
             }
-            for k, v in sorted(
-                model_agg.items(), key=lambda x: x[1]["cost"], reverse=True
-            )
+            for k, v in sorted(model_agg.items(), key=lambda x: x[1]["cost"], reverse=True)
         ]
 
-        return JSONResponse({
-            "total_cost_usd": round(total_cost, 6),
-            "today_cost_usd": round(today_cost, 6),
-            "total_traces": len(traces),
-            "avg_latency_ms": round(avg_lat, 2),
-            "error_count": error_count,
-            "model_breakdown": breakdown,
-        })
+        return JSONResponse(
+            {
+                "total_cost_usd": round(total_cost, 6),
+                "today_cost_usd": round(today_cost, 6),
+                "total_traces": len(traces),
+                "avg_latency_ms": round(avg_lat, 2),
+                "error_count": error_count,
+                "model_breakdown": breakdown,
+            }
+        )
 
     @app.get("/api/recommendations", response_class=HTMLResponse)
     async def api_recommendations() -> HTMLResponse:
@@ -528,10 +513,12 @@ def create_app(storage: "StorageBackend") -> FastAPI:
         async def generator() -> AsyncGenerator[str, None]:
             while True:
                 traces = await storage.list_traces(limit=1000)
-                payload = json.dumps({
-                    "count": len(traces),
-                    "timestamp": datetime.now(timezone.utc).isoformat(),
-                })
+                payload = json.dumps(
+                    {
+                        "count": len(traces),
+                        "timestamp": datetime.now(UTC).isoformat(),
+                    }
+                )
                 yield f"data: {payload}\n\n"
                 await asyncio.sleep(2)
 
@@ -551,8 +538,9 @@ def create_app(storage: "StorageBackend") -> FastAPI:
 # Server launcher
 # ---------------------------------------------------------------------------
 
+
 def start_web_dashboard(
-    storage: "StorageBackend",
+    storage: StorageBackend,
     host: str = "127.0.0.1",
     port: int = 7842,
     block: bool = True,
@@ -567,15 +555,14 @@ def start_web_dashboard(
     try:
         import uvicorn
     except ImportError as exc:
-        raise ImportError(
-            "Web dashboard requires uvicorn. Install with: pip install keeto[web]"
-        ) from exc
+        raise ImportError("Web dashboard requires uvicorn. Install with: pip install keeto[web]") from exc
 
     app = create_app(storage)
 
     if block:
         uvicorn.run(app, host=host, port=port, log_level="warning")
     else:
+
         def _run() -> None:
             uvicorn.run(app, host=host, port=port, log_level="warning")
 

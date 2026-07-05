@@ -21,6 +21,7 @@ class PydanticAIPlugin(Plugin):
         self._monitor = monitor
         try:
             import pydantic_ai  # noqa: F401
+
             self._patch_pydantic_ai()
         except ImportError:
             pass
@@ -29,7 +30,6 @@ class PydanticAIPlugin(Plugin):
         try:
             from pydantic_ai import Agent
 
-            plugin = self
             original_run = Agent.run
             original_run_sync = Agent.run_sync
 

@@ -1,5 +1,5 @@
-import asyncio
 import pytest
+
 from keeto.core.monitor import Monitor
 from keeto.storage.memory import MemoryStorage
 

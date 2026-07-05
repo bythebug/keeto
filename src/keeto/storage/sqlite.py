@@ -2,11 +2,13 @@ from __future__ import annotations
 
 import asyncio
 import json
-from datetime import datetime, timezone
-from pathlib import Path
-from typing import Any
+from datetime import UTC, datetime
+from typing import TYPE_CHECKING, Any
 
 from keeto.core.span import Span, SpanEvent, SpanKind, SpanStatus, Trace
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 class SQLiteStorage:
@@ -158,8 +160,7 @@ class SQLiteStorage:
             where = f"WHERE {' AND '.join(conditions)}" if conditions else ""
             params += [limit, offset]
             query = (
-                f"SELECT trace_id, start_time, end_time FROM traces "
-                f"{where} ORDER BY start_time DESC LIMIT ? OFFSET ?"
+                f"SELECT trace_id, start_time, end_time FROM traces {where} ORDER BY start_time DESC LIMIT ? OFFSET ?"
             )
             async with conn.execute(query, params) as cur:
                 trace_rows = await cur.fetchall()
@@ -203,12 +204,12 @@ def _parse_dt(value: str | None) -> datetime | None:
         return None
     dt = datetime.fromisoformat(value)
     if dt.tzinfo is None:
-        dt = dt.replace(tzinfo=timezone.utc)
+        dt = dt.replace(tzinfo=UTC)
     return dt
 
 
 def _row_to_trace(row: Any) -> Trace:
-    start = _parse_dt(row["start_time"]) or datetime.now(timezone.utc)
+    start = _parse_dt(row["start_time"]) or datetime.now(UTC)
     end = _parse_dt(row["end_time"])
     return Trace(trace_id=row["trace_id"], start_time=start, end_time=end)
 
@@ -219,12 +220,12 @@ def _row_to_span(row: Any) -> Span:
     events = [
         SpanEvent(
             name=e["name"],
-            timestamp=_parse_dt(e["timestamp"]) or datetime.now(timezone.utc),
+            timestamp=_parse_dt(e["timestamp"]) or datetime.now(UTC),
             attributes=e.get("attributes", {}),
         )
         for e in raw_events
     ]
-    start = _parse_dt(row["start_time"]) or datetime.now(timezone.utc)
+    start = _parse_dt(row["start_time"]) or datetime.now(UTC)
     end = _parse_dt(row["end_time"])
     return Span(
         span_id=row["span_id"],

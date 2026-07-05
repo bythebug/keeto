@@ -20,7 +20,7 @@ import hmac
 import json
 import logging
 import threading
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 import httpx
@@ -60,7 +60,7 @@ class WebhookNotifier:
             return
         payload = {
             "type": "error",
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "span_id": span.span_id,
             "trace_id": span.trace_id,
             "name": span.name,
@@ -77,7 +77,7 @@ class WebhookNotifier:
             return
         payload = {
             "type": "budget_exceeded",
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "budget_kind": kind,
             "current": current,
             "limit": limit,

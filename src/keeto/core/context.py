@@ -11,12 +11,8 @@ from __future__ import annotations
 import contextvars
 import uuid
 
-_trace_id_var: contextvars.ContextVar[str | None] = contextvars.ContextVar(
-    "keeto_trace_id", default=None
-)
-_span_id_var: contextvars.ContextVar[str | None] = contextvars.ContextVar(
-    "keeto_span_id", default=None
-)
+_trace_id_var: contextvars.ContextVar[str | None] = contextvars.ContextVar("keeto_trace_id", default=None)
+_span_id_var: contextvars.ContextVar[str | None] = contextvars.ContextVar("keeto_span_id", default=None)
 
 
 def get_current_trace_id() -> str | None:

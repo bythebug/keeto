@@ -39,6 +39,7 @@ class OllamaPlugin(Plugin):
     def uninstall(self) -> None:
         try:
             import ollama  # type: ignore[import-untyped]
+
             for attr, original in self._originals.items():
                 setattr(ollama, attr, original)
         except ImportError:

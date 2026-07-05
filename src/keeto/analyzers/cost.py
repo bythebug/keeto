@@ -19,16 +19,9 @@ class CostAnomaly:
     z_score: float
 
 
-def detect_cost_anomalies(
-    traces: list[Trace], z_threshold: float = 2.0
-) -> list[CostAnomaly]:
+def detect_cost_anomalies(traces: list[Trace], z_threshold: float = 2.0) -> list[CostAnomaly]:
     """Return spans whose cost is more than z_threshold std-devs above the session mean."""
-    items = [
-        (s, t.trace_id, s.cost_usd)
-        for t in traces
-        for s in t.spans
-        if s.cost_usd is not None and s.cost_usd > 0
-    ]
+    items = [(s, t.trace_id, s.cost_usd) for t in traces for s in t.spans if s.cost_usd is not None and s.cost_usd > 0]
     if len(items) < 3:
         return []
 

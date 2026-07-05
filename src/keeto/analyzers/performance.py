@@ -21,9 +21,7 @@ class LatencyAnomaly:
     z_score: float
 
 
-def detect_latency_anomalies(
-    traces: list[Trace], z_threshold: float = 2.0
-) -> list[LatencyAnomaly]:
+def detect_latency_anomalies(traces: list[Trace], z_threshold: float = 2.0) -> list[LatencyAnomaly]:
     """Return LLM spans whose latency is more than z_threshold std-devs above the session mean."""
     items = [
         (s, t.trace_id, s.latency_ms)
@@ -56,10 +54,7 @@ def detect_latency_anomalies(
 def latency_percentiles(traces: list[Trace]) -> dict[str, float]:
     """Return P50/P95/P99 latency in ms across all LLM spans."""
     latencies = sorted(
-        s.latency_ms
-        for t in traces
-        for s in t.spans
-        if s.kind == SpanKind.LLM and s.latency_ms is not None
+        s.latency_ms for t in traces for s in t.spans if s.kind == SpanKind.LLM and s.latency_ms is not None
     )
     if not latencies:
         return {}

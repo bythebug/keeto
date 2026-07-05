@@ -5,10 +5,9 @@ import importlib.metadata
 import logging
 from typing import TYPE_CHECKING
 
-from keeto.plugins.base import Plugin
-
 if TYPE_CHECKING:
     from keeto.core.monitor import Monitor
+    from keeto.plugins.base import Plugin
 
 log = logging.getLogger(__name__)
 
@@ -45,10 +44,7 @@ class PluginRegistry:
         Scan installed packages, load matching plugins from entry points,
         install them, and return the list of loaded plugins.
         """
-        installed_names = {
-            dist.metadata["Name"].lower()
-            for dist in importlib.metadata.distributions()
-        }
+        installed_names = {dist.metadata["Name"].lower() for dist in importlib.metadata.distributions()}
 
         # Collect entry-point names to load
         to_load: set[str] = set()

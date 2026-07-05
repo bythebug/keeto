@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -19,7 +19,7 @@ def _make_trace(
     cost_usd: float = 0.002,
     error: bool = False,
 ) -> Trace:
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     span = Span(
         trace_id="a" * 32,
         span_id="b" * 16,
@@ -53,9 +53,8 @@ def _mlflow_mock() -> MagicMock:
 
 class TestExportMlflow:
     def test_raises_without_mlflow(self) -> None:
-        with patch.dict("sys.modules", {"mlflow": None}):  # type: ignore[dict-item]
-            with pytest.raises(ImportError, match="mlflow"):
-                export_mlflow([_make_trace()])
+        with patch.dict("sys.modules", {"mlflow": None}), pytest.raises(ImportError, match="mlflow"):  # type: ignore[dict-item]
+            export_mlflow([_make_trace()])
 
     def test_sets_experiment(self) -> None:
         mock = _mlflow_mock()

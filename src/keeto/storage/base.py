@@ -1,9 +1,11 @@
 from __future__ import annotations
 
-from datetime import datetime
-from typing import Any, Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
 
-from keeto.core.span import Span, Trace
+if TYPE_CHECKING:
+    from datetime import datetime
+
+    from keeto.core.span import Span, Trace
 
 
 class TraceQuery(Protocol):

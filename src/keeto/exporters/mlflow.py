@@ -34,9 +34,7 @@ def export_mlflow(
     try:
         import mlflow  # type: ignore[import-untyped]
     except ImportError as exc:
-        raise ImportError(
-            "MLflow export requires the mlflow package. Install: pip install mlflow"
-        ) from exc
+        raise ImportError("MLflow export requires the mlflow package. Install: pip install mlflow") from exc
 
     if tracking_uri:
         mlflow.set_tracking_uri(tracking_uri)

@@ -6,17 +6,15 @@ import hashlib
 import hmac
 import json
 import threading
-from datetime import datetime, timezone
-from unittest.mock import MagicMock, call, patch
+from datetime import UTC, datetime
+from unittest.mock import patch
 
-import pytest
-
-from keeto.core.span import Span, SpanKind, SpanStatus, Trace
+from keeto.core.span import Span, SpanKind, SpanStatus
 from keeto.exporters.webhook import WebhookNotifier
 
 
 def _make_error_span() -> Span:
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     span = Span(
         trace_id="a" * 32,
         span_id="b" * 16,
@@ -86,10 +84,10 @@ class TestWebhookNotifier:
         posted: list[dict] = []
 
         with patch("keeto.exporters.webhook.httpx") as mock_httpx:
-            mock_httpx.post.side_effect = lambda url, content, headers, timeout: posted.append(
-                json.loads(content)
+            mock_httpx.post.side_effect = lambda url, content, headers, timeout: posted.append(json.loads(content))
+            notifier._send(
+                {"type": "budget_exceeded", "budget_kind": "daily", "current": 5.0, "limit": 4.0, "unit": "USD"}
             )
-            notifier._send({"type": "budget_exceeded", "budget_kind": "daily", "current": 5.0, "limit": 4.0, "unit": "USD"})
 
         assert posted[0]["budget_kind"] == "daily"
         assert posted[0]["current"] == 5.0

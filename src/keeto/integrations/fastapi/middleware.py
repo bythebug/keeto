@@ -65,9 +65,7 @@ class KeetoMiddleware:
         try:
             await self._app(scope, receive, send_wrapper)
             span.set_attribute("http.status_code", status_code)
-            span.finish(
-                status=SpanStatus.OK if status_code < 400 else SpanStatus.ERROR
-            )
+            span.finish(status=SpanStatus.OK if status_code < 400 else SpanStatus.ERROR)
         except Exception as exc:
             span.set_attribute("http.status_code", 500)
             span.finish(status=SpanStatus.ERROR, status_message=str(exc))

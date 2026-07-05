@@ -2,8 +2,7 @@
 
 from __future__ import annotations
 
-import sys
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -11,10 +10,10 @@ import pytest
 from keeto.core.span import Span, SpanKind, SpanStatus, Trace
 from keeto.exporters.otel import _ns, _span_id_int, _trace_id_int, export_otel
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _make_trace(
     trace_id: str = "a" * 32,
@@ -23,7 +22,7 @@ def _make_trace(
     model: str = "gpt-4o",
     error: bool = False,
 ) -> Trace:
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     span = Span(
         trace_id=trace_id,
         span_id=span_id,
@@ -118,6 +117,7 @@ def _make_otel_mocks() -> dict[str, MagicMock]:
 # ID conversion helpers
 # ---------------------------------------------------------------------------
 
+
 class TestIdConversions:
     def test_trace_id_int_roundtrip(self) -> None:
         tid = "a" * 32
@@ -132,13 +132,14 @@ class TestIdConversions:
         assert result == int("abc" + "0" * 29, 16)
 
     def test_ns_conversion(self) -> None:
-        dt = datetime(2024, 1, 1, 0, 0, 0, tzinfo=timezone.utc)
+        dt = datetime(2024, 1, 1, 0, 0, 0, tzinfo=UTC)
         assert _ns(dt) == int(dt.timestamp() * 1_000_000_000)
 
 
 # ---------------------------------------------------------------------------
 # _to_otel_span — attribute mapping
 # ---------------------------------------------------------------------------
+
 
 class TestToOtelSpan:
     def test_attributes_mapped(self) -> None:
@@ -164,10 +165,8 @@ class TestToOtelSpan:
     def test_no_provider_or_model_omitted(self) -> None:
         from keeto.exporters.otel import _to_otel_span
 
-        now = datetime.now(timezone.utc)
-        span = Span(
-            trace_id="a" * 32, span_id="b" * 16, name="custom", kind=SpanKind.CUSTOM, start_time=now
-        )
+        now = datetime.now(UTC)
+        span = Span(trace_id="a" * 32, span_id="b" * 16, name="custom", kind=SpanKind.CUSTOM, start_time=now)
         span.finish()
         mock_resource = MagicMock()
 
@@ -183,7 +182,7 @@ class TestToOtelSpan:
     def test_parent_span_set_when_parent_id_present(self) -> None:
         from keeto.exporters.otel import _to_otel_span
 
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         span = Span(
             trace_id="a" * 32,
             span_id="b" * 16,
@@ -208,17 +207,17 @@ class TestToOtelSpan:
 # export_otel — error handling
 # ---------------------------------------------------------------------------
 
+
 class TestExportOtel:
     def test_raises_when_otel_not_installed(self) -> None:
-        with patch.dict("sys.modules", {"opentelemetry.sdk.resources": None}):  # type: ignore[dict-item]
-            with pytest.raises(ImportError, match="keeto\\[otel\\]"):
-                export_otel([_make_trace()])
+        mods = {"opentelemetry.sdk.resources": None}
+        with patch.dict("sys.modules", mods), pytest.raises(ImportError, match="keeto\\[otel\\]"):  # type: ignore[dict-item]
+            export_otel([_make_trace()])
 
     def test_unknown_protocol_raises(self) -> None:
         mocks = _make_otel_mocks()
-        with patch.dict("sys.modules", mocks):
-            with pytest.raises(ValueError, match="Unknown OTLP protocol"):
-                export_otel([_make_trace()], protocol="invalid")
+        with patch.dict("sys.modules", mocks), pytest.raises(ValueError, match="Unknown OTLP protocol"):
+            export_otel([_make_trace()], protocol="invalid")
 
     def test_empty_traces_no_op(self) -> None:
         mocks = _make_otel_mocks()
@@ -232,7 +231,8 @@ class TestExportOtel:
         mocks = _make_otel_mocks()
         grpc_exporter_inst = MagicMock()
         grpc_exporter_inst.export.return_value = mocks["opentelemetry.sdk.trace.export"].SpanExportResult.SUCCESS
-        mocks["opentelemetry.exporter.otlp.proto.grpc.trace_exporter"].OTLPSpanExporter.return_value = grpc_exporter_inst
+        otlp_cls = mocks["opentelemetry.exporter.otlp.proto.grpc.trace_exporter"].OTLPSpanExporter
+        otlp_cls.return_value = grpc_exporter_inst
 
         with patch.dict("sys.modules", mocks):
             export_otel([_make_trace()], endpoint="http://localhost:4317", protocol="grpc")

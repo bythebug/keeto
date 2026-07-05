@@ -7,16 +7,21 @@ Extracts model, token counts, cost, tool calls, and multimodal inputs.
 
 from __future__ import annotations
 
+import contextlib
 import logging
 from typing import TYPE_CHECKING, Any
 
-import httpx
-
 from keeto._pricing import cost_usd
-from keeto.integrations._httpx import RecordingAsyncTransport, RecordingSyncTransport, _try_parse_json
+from keeto.integrations._httpx import (
+    RecordingAsyncTransport,
+    RecordingSyncTransport,
+    _try_parse_json,
+)
 from keeto.plugins.base import Plugin
 
 if TYPE_CHECKING:
+    import httpx
+
     from keeto.core.monitor import Monitor
     from keeto.core.span import Span
 
@@ -39,10 +44,8 @@ class AnthropicPlugin(Plugin):
 
     def uninstall(self) -> None:
         for client, original_transport in self._patched_clients:
-            try:
+            with contextlib.suppress(Exception):
                 client._transport = original_transport
-            except Exception:
-                pass
         self._patched_clients.clear()
 
     def _patch_anthropic(self) -> None:
@@ -128,8 +131,7 @@ class AnthropicPlugin(Plugin):
 
             # Issue #56: multimodal detection
             has_images = any(
-                isinstance(m.get("content"), list)
-                and any(c.get("type") == "image" for c in m["content"])
+                isinstance(m.get("content"), list) and any(c.get("type") == "image" for c in m["content"])
                 for m in messages
                 if isinstance(m, dict)
             )
@@ -140,9 +142,7 @@ class AnthropicPlugin(Plugin):
             tools = req_body.get("tools")
             if tools:
                 span.set_attribute("llm.tool_count", len(tools))
-                span.set_attribute("llm.tool_names", [
-                    t.get("name") for t in tools if isinstance(t, dict)
-                ])
+                span.set_attribute("llm.tool_names", [t.get("name") for t in tools if isinstance(t, dict)])
 
         resp_body = _try_parse_json(response.content)
         if resp_body:
@@ -170,10 +170,10 @@ class AnthropicPlugin(Plugin):
             tool_uses = [b for b in content_blocks if isinstance(b, dict) and b.get("type") == "tool_use"]
             if tool_uses:
                 span.set_attribute("llm.tool_calls_count", len(tool_uses))
-                span.set_attribute("llm.tool_calls", [
-                    {"id": b.get("id"), "name": b.get("name"), "input": b.get("input")}
-                    for b in tool_uses
-                ])
+                span.set_attribute(
+                    "llm.tool_calls",
+                    [{"id": b.get("id"), "name": b.get("name"), "input": b.get("input")} for b in tool_uses],
+                )
                 if len(tool_uses) > 1:
                     span.set_attribute("llm.parallel_tool_calls", True)
 

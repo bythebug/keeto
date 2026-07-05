@@ -10,10 +10,10 @@ TracesView — left/right split for the Traces tab.
 
 from __future__ import annotations
 
+import contextlib
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, ClassVar
 
-from textual.app import ComposeResult
 from textual.binding import Binding
 from textual.message import Message
 from textual.reactive import reactive
@@ -23,6 +23,8 @@ from textual.widgets import DataTable, Input, Label, Static
 from keeto.dashboard.tui.widgets._utils import _age, _fmt_cost, _fmt_lat, _fmt_tokens
 
 if TYPE_CHECKING:
+    from textual.app import ComposeResult
+
     from keeto.core.span import Trace
     from keeto.storage.base import StorageBackend
 
@@ -30,6 +32,7 @@ if TYPE_CHECKING:
 # ---------------------------------------------------------------------------
 # TraceListWidget
 # ---------------------------------------------------------------------------
+
 
 class TraceListWidget(Widget):
     """
@@ -51,27 +54,27 @@ class TraceListWidget(Widget):
 
     # Columns: (label, key, width, justify)
     _COLUMNS: ClassVar[list[tuple[str, str, int, str]]] = [
-        ("ID",       "id",       9,  "left"),
-        ("Age",      "age",      8,  "left"),
+        ("ID", "id", 9, "left"),
+        ("Age", "age", 8, "left"),
         ("Provider", "provider", 11, "left"),
-        ("Model",    "model",    18, "left"),
-        ("Latency",  "latency",  9,  "right"),
-        ("In",       "in",       7,  "right"),
-        ("Out",      "out",      7,  "right"),
-        ("Cost",     "cost",     9,  "right"),
-        ("",         "status",   7,  "center"),
+        ("Model", "model", 18, "left"),
+        ("Latency", "latency", 9, "right"),
+        ("In", "in", 7, "right"),
+        ("Out", "out", 7, "right"),
+        ("Cost", "cost", 9, "right"),
+        ("", "status", 7, "center"),
     ]
 
     BINDINGS: ClassVar[list[Binding]] = [
         Binding("j", "cursor_down", "Down", show=False),
-        Binding("k", "cursor_up",   "Up",   show=False),
-        Binding("g", "cursor_top",  "Top",  show=False),
+        Binding("k", "cursor_up", "Up", show=False),
+        Binding("g", "cursor_top", "Top", show=False),
         Binding("G", "cursor_bottom", "Bottom", show=False),
     ]
 
     @dataclass
     class TraceSelected(Message):
-        trace: "Trace"
+        trace: Trace
 
     def __init__(self) -> None:
         super().__init__()
@@ -90,9 +93,7 @@ class TraceListWidget(Widget):
 
     def on_data_table_row_highlighted(self, event: DataTable.RowHighlighted) -> None:
         if event.row_key and event.row_key.value in self._trace_map:
-            self.post_message(
-                self.TraceSelected(self._trace_map[event.row_key.value])
-            )
+            self.post_message(self.TraceSelected(self._trace_map[event.row_key.value]))
 
     # ------------------------------------------------------------------
     # Vim navigation actions
@@ -122,12 +123,12 @@ class TraceListWidget(Widget):
         table = self.query_one(DataTable)
 
         # Remember current selection
+        import contextlib
+
         current_key: str | None = None
         if table.cursor_row >= 0:
-            try:
+            with contextlib.suppress(Exception):
                 current_key = table.get_row_at(table.cursor_row)[0]  # type: ignore[index]
-            except Exception:
-                pass
 
         self._traces = traces
         self._trace_map = {t.trace_id: t for t in traces}
@@ -137,35 +138,29 @@ class TraceListWidget(Widget):
 
         # Remove rows no longer present
         for key in existing_keys - incoming_keys:
-            try:
+            with contextlib.suppress(Exception):
                 table.remove_row(key)
-            except Exception:
-                pass
 
         # Add or update rows
         for trace in traces:
             row = self._row_cells(trace)
             if trace.trace_id in existing_keys:
                 for col_idx, cell in enumerate(row):
-                    try:
+                    with contextlib.suppress(Exception):
                         table.update_cell(
                             trace.trace_id,
                             self._COLUMNS[col_idx][1],
                             cell,
                         )
-                    except Exception:
-                        pass
             else:
                 table.add_row(*row, key=trace.trace_id)
 
         # Restore cursor
         if current_key and current_key in {str(k.value) for k in table.rows}:
-            try:
+            with contextlib.suppress(Exception):
                 table.move_cursor(row=table.get_row_index(current_key))
-            except Exception:
-                pass
 
-    def _row_cells(self, trace: "Trace") -> list[str]:
+    def _row_cells(self, trace: Trace) -> list[str]:
         status = "[red]✗[/red]" if trace.has_error else "[green]✓[/green]"
         return [
             trace.trace_id[:8],
@@ -180,7 +175,7 @@ class TraceListWidget(Widget):
         ]
 
     @property
-    def selected_trace(self) -> "Trace | None":
+    def selected_trace(self) -> Trace | None:
         table = self.query_one(DataTable)
         try:
             key = table.get_row_at(table.cursor_row)[0]  # type: ignore[index]
@@ -192,6 +187,7 @@ class TraceListWidget(Widget):
 # ---------------------------------------------------------------------------
 # TracesView — the full Traces tab (list + search bar + detail panel)
 # ---------------------------------------------------------------------------
+
 
 class TracesView(Widget):
     DEFAULT_CSS: ClassVar[str] = """
@@ -231,13 +227,13 @@ class TracesView(Widget):
     # The current filter text (reactive so CSS / labels react)
     _filter: reactive[str] = reactive("")
 
-    def __init__(self, storage: "StorageBackend") -> None:
+    def __init__(self, storage: StorageBackend) -> None:
         super().__init__()
         self._storage = storage
         self._all_traces: list[Trace] = []
 
     def compose(self) -> ComposeResult:
-        from keeto.dashboard.tui.widgets.detail import TraceDetailWidget  # noqa: PLC0415
+        from keeto.dashboard.tui.widgets.detail import TraceDetailWidget
 
         with Static(id="search-bar"):
             yield Input(
@@ -252,10 +248,8 @@ class TracesView(Widget):
             with Static(id="detail-pane"):
                 yield TraceDetailWidget()
 
-    def on_trace_list_widget_trace_selected(
-        self, event: TraceListWidget.TraceSelected
-    ) -> None:
-        from keeto.dashboard.tui.widgets.detail import TraceDetailWidget  # noqa: PLC0415
+    def on_trace_list_widget_trace_selected(self, event: TraceListWidget.TraceSelected) -> None:
+        from keeto.dashboard.tui.widgets.detail import TraceDetailWidget
 
         self.query_one(TraceDetailWidget).show(event.trace)
 
@@ -267,19 +261,15 @@ class TracesView(Widget):
     def on_input_submitted(self, event: Input.Submitted) -> None:
         # Return key from search → focus the table
         if event.input.id == "search-input":
-            try:
+            with contextlib.suppress(Exception):
                 self.query_one(TraceListWidget).query_one(DataTable).focus()
-            except Exception:
-                pass
 
     def focus_search(self) -> None:
         """Called by KeetoApp.action_focus_search to focus the search input."""
-        try:
+        with contextlib.suppress(Exception):
             self.query_one("#search-input", Input).focus()
-        except Exception:
-            pass
 
-    def refresh_data(self, traces: list["Trace"]) -> None:
+    def refresh_data(self, traces: list[Trace]) -> None:
         """Called every 2s by KeetoApp poll loop."""
         self._all_traces = traces
         self._apply_filter()
@@ -288,7 +278,8 @@ class TracesView(Widget):
         q = self._filter.lower().strip()
         if q:
             filtered = [
-                t for t in self._all_traces
+                t
+                for t in self._all_traces
                 if q in (t.model or "").lower()
                 or q in (t.provider or "").lower()
                 or q in t.trace_id.lower()

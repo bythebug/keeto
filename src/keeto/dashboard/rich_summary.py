@@ -73,9 +73,7 @@ def render(traces: list[Trace], console: Console | None = None, limit: int = 50)
     error_count = sum(1 for t in traces if t.has_error)
     latencies = [t.latency_ms for t in traces if t.latency_ms is not None]
     avg_latency = statistics.mean(latencies) if latencies else None
-    p95_latency = (
-        sorted(latencies)[int(len(latencies) * 0.95)] if len(latencies) >= 2 else None
-    )
+    p95_latency = sorted(latencies)[int(len(latencies) * 0.95)] if len(latencies) >= 2 else None
     total_input = sum(t.total_input_tokens for t in traces)
     total_output = sum(t.total_output_tokens for t in traces)
 

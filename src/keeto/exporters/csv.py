@@ -2,9 +2,10 @@ from __future__ import annotations
 
 import csv
 import sys
-from pathlib import Path
+from typing import TYPE_CHECKING
 
-from keeto.core.span import Trace
+if TYPE_CHECKING:
+    from keeto.core.span import Trace
 
 _FIELDS = [
     "trace_id",
@@ -34,9 +35,7 @@ def export_csv(traces: list[Trace], path: str | None = None) -> None:
                     "latency_ms": trace.latency_ms or "",
                     "input_tokens": trace.total_input_tokens,
                     "output_tokens": trace.total_output_tokens,
-                    "cached_tokens": sum(
-                        s.cached_tokens for s in trace.spans if s.cached_tokens
-                    ),
+                    "cached_tokens": sum(s.cached_tokens for s in trace.spans if s.cached_tokens),
                     "cost_usd": trace.total_cost_usd,
                     "has_error": trace.has_error,
                     "start_time": trace.start_time.isoformat(),

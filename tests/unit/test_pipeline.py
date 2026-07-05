@@ -3,9 +3,8 @@
 import asyncio
 import time
 
-import pytest
 from keeto.core.pipeline import Pipeline
-from keeto.core.span import Span, SpanStatus
+from keeto.core.span import Span
 from keeto.storage.memory import MemoryStorage
 
 

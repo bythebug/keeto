@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 
 def _fmt_lat(ms: float | None) -> str:
@@ -28,7 +28,7 @@ def _fmt_cost(usd: float) -> str:
 
 
 def _age(dt: datetime) -> str:
-    delta = datetime.now(timezone.utc) - dt
+    delta = datetime.now(UTC) - dt
     s = int(delta.total_seconds())
     if s < 60:
         return f"{s}s ago"

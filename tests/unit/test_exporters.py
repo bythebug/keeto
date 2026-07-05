@@ -46,6 +46,7 @@ def _make_trace(
 # JSON exporter
 # ---------------------------------------------------------------------------
 
+
 class TestExportJson:
     def test_stdout_output(self, capsys: pytest.CaptureFixture[str]) -> None:
         traces = [_make_trace("t1"), _make_trace("t2")]
@@ -84,6 +85,7 @@ class TestExportJson:
 # CSV exporter
 # ---------------------------------------------------------------------------
 
+
 class TestExportCsv:
     def test_stdout_output(self, capsys: pytest.CaptureFixture[str]) -> None:
         traces = [_make_trace("t1"), _make_trace("t2")]
@@ -97,24 +99,27 @@ class TestExportCsv:
         traces = [_make_trace("t1")]
         out_file = str(tmp_path / "out.csv")
         export_csv(traces, path=out_file)
-        reader = csv.DictReader(Path(out_file).open())
-        rows = list(reader)
+        with Path(out_file).open() as f:
+            reader = csv.DictReader(f)
+            rows = list(reader)
         assert len(rows) == 1
         assert rows[0]["trace_id"] == "t1"
 
     def test_header_fields(self, tmp_path: Path) -> None:
         from keeto.exporters.csv import _FIELDS
+
         out_file = str(tmp_path / "out.csv")
         export_csv([_make_trace("t1")], path=out_file)
-        reader = csv.DictReader(Path(out_file).open())
-        assert set(reader.fieldnames or []) == set(_FIELDS)
+        with Path(out_file).open() as f:
+            reader = csv.DictReader(f)
+            assert set(reader.fieldnames or []) == set(_FIELDS)
 
     def test_cost_and_tokens(self, tmp_path: Path) -> None:
         traces = [_make_trace("t1", input_tokens=300, output_tokens=90, cost_usd=0.005)]
         out_file = str(tmp_path / "out.csv")
         export_csv(traces, path=out_file)
-        reader = csv.DictReader(Path(out_file).open())
-        row = list(reader)[0]
+        with Path(out_file).open() as f:
+            row = next(iter(csv.DictReader(f)))
         assert float(row["cost_usd"]) == pytest.approx(0.005)
         assert int(row["input_tokens"]) == 300
         assert int(row["output_tokens"]) == 90
@@ -123,28 +128,28 @@ class TestExportCsv:
         traces = [_make_trace("t1", error=True)]
         out_file = str(tmp_path / "out.csv")
         export_csv(traces, path=out_file)
-        reader = csv.DictReader(Path(out_file).open())
-        row = list(reader)[0]
+        with Path(out_file).open() as f:
+            row = next(iter(csv.DictReader(f)))
         assert row["has_error"] == "True"
 
     def test_empty_traces(self, tmp_path: Path) -> None:
         out_file = str(tmp_path / "out.csv")
         export_csv([], path=out_file)
-        reader = csv.DictReader(Path(out_file).open())
-        assert list(reader) == []
+        with Path(out_file).open() as f:
+            assert list(csv.DictReader(f)) == []
 
     def test_latency_populated(self, tmp_path: Path) -> None:
         traces = [_make_trace("t1", latency_ms=750.0)]
         out_file = str(tmp_path / "out.csv")
         export_csv(traces, path=out_file)
-        reader = csv.DictReader(Path(out_file).open())
-        row = list(reader)[0]
+        with Path(out_file).open() as f:
+            row = next(iter(csv.DictReader(f)))
         assert float(row["latency_ms"]) == pytest.approx(750.0)
 
     def test_multiple_traces_order(self, tmp_path: Path) -> None:
         traces = [_make_trace(f"t{i}") for i in range(5)]
         out_file = str(tmp_path / "out.csv")
         export_csv(traces, path=out_file)
-        reader = csv.DictReader(Path(out_file).open())
-        ids = [r["trace_id"] for r in reader]
+        with Path(out_file).open() as f:
+            ids = [r["trace_id"] for r in csv.DictReader(f)]
         assert ids == [f"t{i}" for i in range(5)]

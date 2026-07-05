@@ -46,9 +46,7 @@ class Pipeline:
             return
         self._started = True
         self._loop = asyncio.new_event_loop()
-        self._thread = threading.Thread(
-            target=self._run_loop, name="keeto-pipeline", daemon=True
-        )
+        self._thread = threading.Thread(target=self._run_loop, name="keeto-pipeline", daemon=True)
         self._thread.start()
 
     def stop(self) -> None:

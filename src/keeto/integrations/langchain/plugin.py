@@ -1,23 +1,23 @@
 from __future__ import annotations
 
-import uuid
-from datetime import datetime, timezone
-from typing import TYPE_CHECKING, Any, ClassVar, Union
-from uuid import UUID
+from datetime import UTC, datetime
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from keeto.core.context import get_current_span_id, get_current_trace_id, new_span_id, new_trace_id
 from keeto.core.span import Span, SpanKind, SpanStatus
 from keeto.plugins.base import Plugin
 
 if TYPE_CHECKING:
+    from uuid import UUID
+
     from keeto.core.monitor import Monitor
 
 
 def _now() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
-def _run_key(run_id: Union[UUID, str]) -> str:
+def _run_key(run_id: UUID | str) -> str:
     return str(run_id)
 
 
@@ -30,12 +30,12 @@ class LangChainPlugin(Plugin):
         self._handler: Any = None
 
     def install(self, monitor: Monitor) -> None:
+        import contextlib
+
         self._monitor = monitor
-        try:
+        with contextlib.suppress(ImportError):
             from langchain_core.callbacks.manager import add_open_telemetry_tracer  # noqa: F401
-        except ImportError:
-            pass
-        try:
+        with contextlib.suppress(ImportError):
             import langchain_core.callbacks.manager as _mgr
 
             _handler = _LangChainHandler(plugin=self)
@@ -48,13 +48,8 @@ class LangChainPlugin(Plugin):
             # LangChain exposes a global list of inheritable handlers.
             if hasattr(_mgr, "openai_callback_var"):
                 pass
-            # Best-effort: patch the default tracer list if accessible.
-            try:
+            with contextlib.suppress(ImportError):
                 from langchain_core.tracers.context import tracing_v2_enabled  # noqa: F401
-            except ImportError:
-                pass
-        except ImportError:
-            pass
 
     def uninstall(self) -> None:
         self._handler = None
@@ -73,10 +68,10 @@ class LangChainPlugin(Plugin):
 
     def _start_span(
         self,
-        run_id: Union[UUID, str],
+        run_id: UUID | str,
         name: str,
         kind: SpanKind,
-        parent_run_id: Union[UUID, str, None] = None,
+        parent_run_id: UUID | str | None = None,
         **attrs: Any,
     ) -> Span:
         trace_id = get_current_trace_id() or new_trace_id()
@@ -105,7 +100,7 @@ class LangChainPlugin(Plugin):
 
     def _finish_span(
         self,
-        run_id: Union[UUID, str],
+        run_id: UUID | str,
         status: SpanStatus = SpanStatus.OK,
         status_message: str | None = None,
         **attrs: Any,

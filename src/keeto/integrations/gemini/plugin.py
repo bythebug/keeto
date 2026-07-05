@@ -39,6 +39,7 @@ class GeminiPlugin(Plugin):
     def uninstall(self) -> None:
         try:
             import google.generativeai as genai  # type: ignore[import-untyped]
+
             if self._original_generate is not None:
                 genai.GenerativeModel.generate_content = self._original_generate
             if self._original_generate_async is not None:

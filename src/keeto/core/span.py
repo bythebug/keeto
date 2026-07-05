@@ -1,13 +1,13 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
-from enum import Enum
+from datetime import UTC, datetime
+from enum import StrEnum
 from typing import Any
 
 from pydantic import BaseModel, Field, field_validator
 
 
-class SpanKind(str, Enum):
+class SpanKind(StrEnum):
     LLM = "llm"
     TOOL = "tool"
     EMBEDDING = "embedding"
@@ -17,7 +17,7 @@ class SpanKind(str, Enum):
     CUSTOM = "custom"
 
 
-class SpanStatus(str, Enum):
+class SpanStatus(StrEnum):
     OK = "ok"
     ERROR = "error"
     UNSET = "unset"
@@ -27,7 +27,7 @@ class SpanEvent(BaseModel):
     """A point-in-time event attached to a span."""
 
     name: str
-    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(UTC))
     attributes: dict[str, Any] = Field(default_factory=dict)
 
 
@@ -39,7 +39,7 @@ class Span(BaseModel):
     parent_span_id: str | None = None
     name: str
     kind: SpanKind = SpanKind.CUSTOM
-    start_time: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    start_time: datetime = Field(default_factory=lambda: datetime.now(UTC))
     end_time: datetime | None = None
     attributes: dict[str, Any] = Field(default_factory=dict)
     events: list[SpanEvent] = Field(default_factory=list)
@@ -80,7 +80,7 @@ class Span(BaseModel):
         status_message: str | None = None,
         end_time: datetime | None = None,
     ) -> None:
-        self.end_time = end_time or datetime.now(timezone.utc)
+        self.end_time = end_time or datetime.now(UTC)
         self.status = status
         if status_message:
             self.status_message = status_message
@@ -89,7 +89,7 @@ class Span(BaseModel):
     @classmethod
     def ensure_timezone(cls, v: datetime | None) -> datetime | None:
         if v is not None and v.tzinfo is None:
-            return v.replace(tzinfo=timezone.utc)
+            return v.replace(tzinfo=UTC)
         return v
 
 
@@ -98,7 +98,7 @@ class Trace(BaseModel):
 
     trace_id: str
     spans: list[Span] = Field(default_factory=list)
-    start_time: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    start_time: datetime = Field(default_factory=lambda: datetime.now(UTC))
     end_time: datetime | None = None
 
     @property
@@ -187,6 +187,5 @@ class Trace(BaseModel):
             return client.messages.create(**kwargs)
 
         raise NotImplementedError(
-            f"Replay is not supported for provider '{provider}'. "
-            "Supported: 'openai', 'anthropic'."
+            f"Replay is not supported for provider '{provider}'. Supported: 'openai', 'anthropic'."
         )

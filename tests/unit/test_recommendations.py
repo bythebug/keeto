@@ -2,23 +2,24 @@
 
 from __future__ import annotations
 
-import asyncio
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
 
 from keeto._pricing import CONTEXT_WINDOWS, context_window
 from keeto.analyzers.comparison import TraceComparison
-from keeto.analyzers.cost import aggregate_cost_by_model, aggregate_cost_by_provider, detect_cost_anomalies
+from keeto.analyzers.cost import (
+    aggregate_cost_by_model,
+    aggregate_cost_by_provider,
+    detect_cost_anomalies,
+)
 from keeto.analyzers.errors import cluster_errors
 from keeto.analyzers.performance import detect_latency_anomalies, latency_percentiles
 from keeto.analyzers.recommendations import (
-    AgentLoopRule,
     CacheCandidatesRule,
-    CostAnomalyRule,
-    CostComparisonRule,
     ContextWasteRule,
+    CostAnomalyRule,
     ErrorPatternRule,
     HallucinationHeuristicRule,
     LatencyAnomalyRule,
@@ -30,7 +31,6 @@ from keeto.analyzers.recommendations import (
 from keeto.core.monitor import Monitor
 from keeto.core.span import Span, SpanKind, SpanStatus, Trace
 from keeto.storage.memory import MemoryStorage
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -52,7 +52,7 @@ def _make_span(
     kind: SpanKind = SpanKind.LLM,
     **attrs: object,
 ) -> Span:
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     span = Span(
         trace_id=trace_id,
         span_id=span_id,
@@ -73,6 +73,7 @@ def _make_span(
         span.set_attribute(k, v)
     if latency_ms is not None:
         from datetime import timedelta
+
         span.end_time = span.start_time + timedelta(milliseconds=latency_ms)
     return span
 
@@ -140,20 +141,16 @@ class TestPromptSizeRule:
 
 class TestCacheCandidatesRule:
     def test_flags_repeated_uncached_call(self) -> None:
-        span1 = _make_span(trace_id="t1", span_id="s1", model="gpt-4o",
-                           **{"llm.message_count": 5})
-        span2 = _make_span(trace_id="t2", span_id="s2", model="gpt-4o",
-                           **{"llm.message_count": 5})
+        span1 = _make_span(trace_id="t1", span_id="s1", model="gpt-4o", **{"llm.message_count": 5})
+        span2 = _make_span(trace_id="t2", span_id="s2", model="gpt-4o", **{"llm.message_count": 5})
         traces = [_make_trace(span1, trace_id="t1"), _make_trace(span2, trace_id="t2")]
         recs = CacheCandidatesRule().check(traces)
         assert len(recs) == 1
         assert recs[0].rule == "cache_candidate"
 
     def test_no_flag_when_cached(self) -> None:
-        span1 = _make_span(trace_id="t1", span_id="s1", model="gpt-4o",
-                           cached_tokens=100, **{"llm.message_count": 5})
-        span2 = _make_span(trace_id="t2", span_id="s2", model="gpt-4o",
-                           **{"llm.message_count": 5})
+        span1 = _make_span(trace_id="t1", span_id="s1", model="gpt-4o", cached_tokens=100, **{"llm.message_count": 5})
+        span2 = _make_span(trace_id="t2", span_id="s2", model="gpt-4o", **{"llm.message_count": 5})
         traces = [_make_trace(span1, trace_id="t1"), _make_trace(span2, trace_id="t2")]
         recs = CacheCandidatesRule().check(traces)
         assert recs == []
@@ -201,8 +198,7 @@ class TestContextWasteRule:
         sys_prompt = "You are a helpful assistant. " * 100  # large
 
         def _span_with_sys(trace_id: str, span_id: str) -> Span:
-            s = _make_span(trace_id=trace_id, span_id=span_id,
-                           model="gpt-4o", input_tokens=500)
+            s = _make_span(trace_id=trace_id, span_id=span_id, model="gpt-4o", input_tokens=500)
             s.set_attribute("llm.system_prompt", sys_prompt)
             return s
 
@@ -269,8 +265,7 @@ class TestHallucinationHeuristicRule:
         assert "ratio" in recs[0].message.lower()
 
     def test_no_flag_normal_response(self) -> None:
-        span = _make_span(input_tokens=500, output_tokens=200,
-                         **{"llm.finish_reason": "stop"})
+        span = _make_span(input_tokens=500, output_tokens=200, **{"llm.finish_reason": "stop"})
         recs = HallucinationHeuristicRule().check([_make_trace(span)])
         assert recs == []
 
@@ -287,10 +282,12 @@ class TestCostAnomalyRule:
             _make_trace(_make_span(trace_id=f"t{i}", span_id=f"s{i}", cost_usd=0.001), trace_id=f"t{i}")
             for i in range(5)
         ]
-        traces.append(_make_trace(
-            _make_span(trace_id="t-outlier", span_id="s-outlier", cost_usd=1.0),
-            trace_id="t-outlier",
-        ))
+        traces.append(
+            _make_trace(
+                _make_span(trace_id="t-outlier", span_id="s-outlier", cost_usd=1.0),
+                trace_id="t-outlier",
+            )
+        )
         recs = CostAnomalyRule().check(traces)
         assert len(recs) >= 1
         assert recs[0].rule == "cost_anomaly"
@@ -323,10 +320,12 @@ class TestLatencyAnomalyRule:
             _make_trace(_make_span(trace_id=f"t{i}", span_id=f"s{i}", latency_ms=200), trace_id=f"t{i}")
             for i in range(5)
         ]
-        traces.append(_make_trace(
-            _make_span(trace_id="t-slow", span_id="s-slow", latency_ms=5000),
-            trace_id="t-slow",
-        ))
+        traces.append(
+            _make_trace(
+                _make_span(trace_id="t-slow", span_id="s-slow", latency_ms=5000),
+                trace_id="t-slow",
+            )
+        )
         recs = LatencyAnomalyRule().check(traces)
         assert len(recs) >= 1
         assert recs[0].rule == "latency_anomaly"
@@ -349,7 +348,8 @@ class TestErrorPatternRule:
     def test_flags_repeated_error(self) -> None:
         def _err_span(tid: str, sid: str) -> Span:
             return _make_span(
-                trace_id=tid, span_id=sid,
+                trace_id=tid,
+                span_id=sid,
                 status=SpanStatus.ERROR,
                 status_message="RateLimitError: Too many requests",
             )
@@ -381,7 +381,7 @@ class TestRecommendationsEngine:
         assert "no recommendations" in str(report)
 
     def test_rule_failure_does_not_crash(self) -> None:
-        from keeto.analyzers.recommendations import Rule, RuleRegistry, Recommendation
+        from keeto.analyzers.recommendations import Rule, RuleRegistry
 
         class BrokenRule(Rule):
             name = "broken"
@@ -399,11 +399,13 @@ class TestRecommendationsEngine:
     def test_str_output_sorted_by_severity(self) -> None:
         from keeto.analyzers.recommendations import Recommendation, RecommendationsReport
 
-        report = RecommendationsReport(recommendations=[
-            Recommendation(severity="info", rule="r1", message="info_msg"),
-            Recommendation(severity="error", rule="r2", message="error_msg"),
-            Recommendation(severity="warning", rule="r3", message="warn_msg"),
-        ])
+        report = RecommendationsReport(
+            recommendations=[
+                Recommendation(severity="info", rule="r1", message="info_msg"),
+                Recommendation(severity="error", rule="r2", message="error_msg"),
+                Recommendation(severity="warning", rule="r3", message="warn_msg"),
+            ]
+        )
         output = str(report)
         error_pos = output.index("error_msg")
         warn_pos = output.index("warn_msg")
@@ -422,10 +424,12 @@ class TestCostUtilities:
             _make_trace(_make_span(trace_id=f"t{i}", span_id=f"s{i}", cost_usd=0.001), trace_id=f"t{i}")
             for i in range(5)
         ]
-        traces.append(_make_trace(
-            _make_span(trace_id="tx", span_id="sx", cost_usd=5.0),
-            trace_id="tx",
-        ))
+        traces.append(
+            _make_trace(
+                _make_span(trace_id="tx", span_id="sx", cost_usd=5.0),
+                trace_id="tx",
+            )
+        )
         anomalies = detect_cost_anomalies(traces)
         assert len(anomalies) >= 1
         assert anomalies[0].z_score > 2.0
@@ -472,10 +476,12 @@ class TestPerformanceUtilities:
             _make_trace(_make_span(trace_id=f"t{i}", span_id=f"s{i}", latency_ms=300), trace_id=f"t{i}")
             for i in range(5)
         ]
-        traces.append(_make_trace(
-            _make_span(trace_id="tx", span_id="sx", latency_ms=10_000),
-            trace_id="tx",
-        ))
+        traces.append(
+            _make_trace(
+                _make_span(trace_id="tx", span_id="sx", latency_ms=10_000),
+                trace_id="tx",
+            )
+        )
         anomalies = detect_latency_anomalies(traces)
         assert len(anomalies) >= 1
 
@@ -568,7 +574,10 @@ class TestMonitorMilestone4:
     def test_compare_returns_comparison(self) -> None:
         m = Monitor(auto=False)
         a = _make_trace(_make_span(trace_id="ta", model="gpt-4o", cost_usd=0.01, latency_ms=800), trace_id="ta")
-        b = _make_trace(_make_span(trace_id="tb", span_id="s2", model="gpt-4o-mini", cost_usd=0.001, latency_ms=300), trace_id="tb")
+        b = _make_trace(
+            _make_span(trace_id="tb", span_id="s2", model="gpt-4o-mini", cost_usd=0.001, latency_ms=300),
+            trace_id="tb",
+        )
         cmp = m.compare(a, b)
         assert cmp.model_a == "gpt-4o"
         assert cmp.model_b == "gpt-4o-mini"

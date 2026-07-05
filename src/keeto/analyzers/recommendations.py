@@ -68,8 +68,7 @@ class Rule(ABC):
     severity: ClassVar[str]
 
     @abstractmethod
-    def check(self, traces: list[Trace]) -> list[Recommendation]:
-        ...
+    def check(self, traces: list[Trace]) -> list[Recommendation]: ...
 
 
 # ---------------------------------------------------------------------------
@@ -113,16 +112,18 @@ class PromptSizeRule(Rule):
                     continue
                 ratio = span.input_tokens / window
                 if ratio > self.THRESHOLD:
-                    results.append(Recommendation(
-                        severity=self.severity,
-                        rule=self.name,
-                        message=(
-                            f"Span '{span.name}' used {span.input_tokens:,} input tokens "
-                            f"({ratio:.0%} of {span.model}'s {window:,}-token context window). "
-                            f"Consider chunking or summarizing the prompt."
-                        ),
-                        trace_ids=[trace.trace_id],
-                    ))
+                    results.append(
+                        Recommendation(
+                            severity=self.severity,
+                            rule=self.name,
+                            message=(
+                                f"Span '{span.name}' used {span.input_tokens:,} input tokens "
+                                f"({ratio:.0%} of {span.model}'s {window:,}-token context window). "
+                                f"Consider chunking or summarizing the prompt."
+                            ),
+                            trace_ids=[trace.trace_id],
+                        )
+                    )
         return results
 
 
@@ -165,15 +166,17 @@ class CacheCandidatesRule(Rule):
             if count >= 2 and not fingerprint_cached.get(fp, False):
                 model = fp.split(":")[0]
                 tids = list(dict.fromkeys(fingerprint_trace_ids[fp]))[:5]
-                results.append(Recommendation(
-                    severity=self.severity,
-                    rule=self.name,
-                    message=(
-                        f"Same prompt sent {count}x to '{model}' without prompt caching. "
-                        f"Enable prompt caching to reduce costs on repeated context."
-                    ),
-                    trace_ids=tids,
-                ))
+                results.append(
+                    Recommendation(
+                        severity=self.severity,
+                        rule=self.name,
+                        message=(
+                            f"Same prompt sent {count}x to '{model}' without prompt caching. "
+                            f"Enable prompt caching to reduce costs on repeated context."
+                        ),
+                        trace_ids=tids,
+                    )
+                )
         return results
 
 
@@ -209,15 +212,17 @@ class ModelSwitchRule(Rule):
                 if orig_entry and cheaper_entry:
                     ratio = orig_entry.get("input", 1) / max(cheaper_entry.get("input", 1), 1e-9)
                     if ratio >= 3:
-                        results.append(Recommendation(
-                            severity=self.severity,
-                            rule=self.name,
-                            message=(
-                                f"'{model}' is ~{ratio:.0f}x more expensive than '{cheaper}' "
-                                f"per input token. For non-complex tasks, consider '{cheaper}'."
-                            ),
-                            trace_ids=[trace.trace_id],
-                        ))
+                        results.append(
+                            Recommendation(
+                                severity=self.severity,
+                                rule=self.name,
+                                message=(
+                                    f"'{model}' is ~{ratio:.0f}x more expensive than '{cheaper}' "
+                                    f"per input token. For non-complex tasks, consider '{cheaper}'."
+                                ),
+                                trace_ids=[trace.trace_id],
+                            )
+                        )
         return results
 
 
@@ -256,16 +261,18 @@ class ContextWasteRule(Rule):
             if count >= self.MIN_CALLS:
                 model = key.split(":")[0]
                 tids = system_prompt_trace[key][:5]
-                results.append(Recommendation(
-                    severity=self.severity,
-                    rule=self.name,
-                    message=(
-                        f"Large system prompt repeated {count}x in calls to '{model}'. "
-                        f"Consider prompt caching (Anthropic) or a cached prefix (OpenAI) "
-                        f"to avoid re-processing the system prompt each call."
-                    ),
-                    trace_ids=tids,
-                ))
+                results.append(
+                    Recommendation(
+                        severity=self.severity,
+                        rule=self.name,
+                        message=(
+                            f"Large system prompt repeated {count}x in calls to '{model}'. "
+                            f"Consider prompt caching (Anthropic) or a cached prefix (OpenAI) "
+                            f"to avoid re-processing the system prompt each call."
+                        ),
+                        trace_ids=tids,
+                    )
+                )
         return results
 
 
@@ -289,16 +296,18 @@ class RetryLoopRule(Rule):
                 if span.attributes.get("llm.retry_count")
             )
             if total_retries > self.MAX_RETRIES:
-                results.append(Recommendation(
-                    severity=self.severity,
-                    rule=self.name,
-                    message=(
-                        f"Trace {trace.trace_id[:8]} had {total_retries} retries. "
-                        f"Excessive retries may indicate rate limiting or flaky prompts. "
-                        f"Consider exponential back-off or prompt simplification."
-                    ),
-                    trace_ids=[trace.trace_id],
-                ))
+                results.append(
+                    Recommendation(
+                        severity=self.severity,
+                        rule=self.name,
+                        message=(
+                            f"Trace {trace.trace_id[:8]} had {total_retries} retries. "
+                            f"Excessive retries may indicate rate limiting or flaky prompts. "
+                            f"Consider exponential back-off or prompt simplification."
+                        ),
+                        trace_ids=[trace.trace_id],
+                    )
+                )
         return results
 
 
@@ -318,37 +327,38 @@ class HallucinationHeuristicRule(Rule):
         results: list[Recommendation] = []
         for trace in traces:
             for span in trace.spans:
-                finish = (
-                    span.attributes.get("llm.finish_reason")
-                    or span.attributes.get("llm.stop_reason")
-                )
+                finish = span.attributes.get("llm.finish_reason") or span.attributes.get("llm.stop_reason")
                 if finish in self.NON_STOP_REASONS:
-                    results.append(Recommendation(
-                        severity=self.severity,
-                        rule=self.name,
-                        message=(
-                            f"Span '{span.name}' stopped due to '{finish}' "
-                            f"(not natural completion). "
-                            f"Response may be truncated -- consider increasing max_tokens."
-                        ),
-                        trace_ids=[trace.trace_id],
-                    ))
+                    results.append(
+                        Recommendation(
+                            severity=self.severity,
+                            rule=self.name,
+                            message=(
+                                f"Span '{span.name}' stopped due to '{finish}' "
+                                f"(not natural completion). "
+                                f"Response may be truncated -- consider increasing max_tokens."
+                            ),
+                            trace_ids=[trace.trace_id],
+                        )
+                    )
                 elif (
                     span.input_tokens
                     and span.output_tokens
                     and span.output_tokens > span.input_tokens * self.OUTPUT_RATIO_THRESHOLD
                 ):
                     ratio = span.output_tokens / span.input_tokens
-                    results.append(Recommendation(
-                        severity="info",
-                        rule=self.name,
-                        message=(
-                            f"Span '{span.name}' produced {span.output_tokens:,} output tokens "
-                            f"from {span.input_tokens:,} input ({ratio:.1f}x ratio). "
-                            f"High output/input ratio -- review for verbosity."
-                        ),
-                        trace_ids=[trace.trace_id],
-                    ))
+                    results.append(
+                        Recommendation(
+                            severity="info",
+                            rule=self.name,
+                            message=(
+                                f"Span '{span.name}' produced {span.output_tokens:,} output tokens "
+                                f"from {span.input_tokens:,} input ({ratio:.1f}x ratio). "
+                                f"High output/input ratio -- review for verbosity."
+                            ),
+                            trace_ids=[trace.trace_id],
+                        )
+                    )
         return results
 
 
@@ -431,10 +441,7 @@ class ErrorPatternRule(Rule):
             Recommendation(
                 severity=self.severity,
                 rule=self.name,
-                message=(
-                    f"Error '{c.pattern}' occurred {c.count}x. "
-                    f"Example: {c.example_message[:100]}"
-                ),
+                message=(f"Error '{c.pattern}' occurred {c.count}x. Example: {c.example_message[:100]}"),
                 trace_ids=c.trace_ids[:5],
             )
             for c in clusters
@@ -470,15 +477,17 @@ class AgentLoopRule(Rule):
             if count > self.MAX_SAME_PROMPT_CALLS:
                 model, msg_count = key.split(":", 1)
                 tids = list(dict.fromkeys(prompt_trace_ids[key]))[:5]
-                results.append(Recommendation(
-                    severity=self.severity,
-                    rule=self.name,
-                    message=(
-                        f"Model '{model}' called {count}x with {msg_count} messages — "
-                        f"possible agent loop. Consider adding a max-iterations guard."
-                    ),
-                    trace_ids=tids,
-                ))
+                results.append(
+                    Recommendation(
+                        severity=self.severity,
+                        rule=self.name,
+                        message=(
+                            f"Model '{model}' called {count}x with {msg_count} messages — "
+                            f"possible agent loop. Consider adding a max-iterations guard."
+                        ),
+                        trace_ids=tids,
+                    )
+                )
         return results
 
 
@@ -503,15 +512,17 @@ class CostComparisonRule(Rule):
         cheapest = providers[-1]
 
         if totals[most_expensive] > totals[cheapest] * 3:
-            return [Recommendation(
-                severity=self.severity,
-                rule=self.name,
-                message=(
-                    f"'{most_expensive}' costs ${totals[most_expensive]:.4f} "
-                    f"vs '{cheapest}' at ${totals[cheapest]:.4f} — "
-                    f"consider shifting equivalent workloads to the cheaper provider."
-                ),
-            )]
+            return [
+                Recommendation(
+                    severity=self.severity,
+                    rule=self.name,
+                    message=(
+                        f"'{most_expensive}' costs ${totals[most_expensive]:.4f} "
+                        f"vs '{cheapest}' at ${totals[cheapest]:.4f} — "
+                        f"consider shifting equivalent workloads to the cheaper provider."
+                    ),
+                )
+            ]
         return []
 
 

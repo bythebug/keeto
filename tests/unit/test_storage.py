@@ -1,9 +1,10 @@
 """Tests for MemoryStorage."""
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import pytest
-from keeto.core.span import Span, SpanStatus, Trace
+
+from keeto.core.span import Span
 from keeto.storage.memory import MemoryStorage
 
 
@@ -61,14 +62,14 @@ class TestMemoryStorage:
     async def test_purge(self) -> None:
         store = MemoryStorage()
         old_span = Span(trace_id="old", span_id="s1", name="test")
-        old_span.start_time = datetime.now(timezone.utc) - timedelta(days=10)
+        old_span.start_time = datetime.now(UTC) - timedelta(days=10)
         old_span.finish()
         new_span = make_span("new", "s2")
 
         await store.append(old_span)
         await store.append(new_span)
 
-        cutoff = datetime.now(timezone.utc) - timedelta(days=1)
+        cutoff = datetime.now(UTC) - timedelta(days=1)
         purged = await store.purge(older_than=cutoff)
 
         assert purged == 1

@@ -3,9 +3,10 @@ from __future__ import annotations
 import json
 import sys
 from pathlib import Path
-from typing import TextIO
+from typing import TYPE_CHECKING
 
-from keeto.core.span import Trace
+if TYPE_CHECKING:
+    from keeto.core.span import Trace
 
 
 def export_json(traces: list[Trace], path: str | None = None) -> None:

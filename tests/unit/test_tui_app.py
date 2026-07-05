@@ -2,17 +2,16 @@
 
 from __future__ import annotations
 
-import asyncio
-import time
-from datetime import timedelta
+from datetime import UTC, timedelta
 
 import pytest
+
 from keeto.core.span import Span, SpanStatus, Trace
 from keeto.dashboard.tui.app import KeetoApp
+from keeto.dashboard.tui.widgets._utils import _age, _fmt_cost, _fmt_lat, _fmt_tokens
 from keeto.dashboard.tui.widgets.cost import CostView
 from keeto.dashboard.tui.widgets.errors import ErrorsView
 from keeto.dashboard.tui.widgets.performance import PerformanceView
-from keeto.dashboard.tui.widgets._utils import _age, _fmt_cost, _fmt_lat, _fmt_tokens
 from keeto.dashboard.tui.widgets.traces import TraceListWidget, TracesView
 from keeto.storage.memory import MemoryStorage
 
@@ -76,12 +75,13 @@ class TestKeetoApp:
 
     def test_refresh_interval_positive(self) -> None:
         from keeto.dashboard.tui.app import _REFRESH_INTERVAL
+
         assert _REFRESH_INTERVAL > 0
 
     @pytest.mark.asyncio
     async def test_compose_runs(self, storage: MemoryStorage) -> None:
         app = KeetoApp(storage=storage)
-        async with app.run_test(headless=True) as pilot:
+        async with app.run_test(headless=True):
             assert app.query_one(TracesView) is not None
             assert app.query_one(CostView) is not None
             assert app.query_one(PerformanceView) is not None
@@ -98,7 +98,7 @@ class TestTraceListWidget:
     @pytest.mark.asyncio
     async def test_columns_rendered(self, storage: MemoryStorage) -> None:
         app = KeetoApp(storage=storage)
-        async with app.run_test(headless=True) as pilot:
+        async with app.run_test(headless=True):
             widget = app.query_one(TraceListWidget)
             table = widget.query_one("DataTable")
             assert len(table.columns) == len(TraceListWidget._COLUMNS)
@@ -164,39 +164,44 @@ class TestFormatHelpers:
         assert _fmt_cost(0.0032) == "$0.0032"
 
     def test_age_seconds(self) -> None:
-        from datetime import datetime, timezone
-        dt = datetime.now(timezone.utc) - timedelta(seconds=30)
+        from datetime import datetime
+
+        dt = datetime.now(UTC) - timedelta(seconds=30)
         assert "s ago" in _age(dt)
 
     def test_age_minutes(self) -> None:
-        from datetime import datetime, timezone
-        dt = datetime.now(timezone.utc) - timedelta(minutes=5)
+        from datetime import datetime
+
+        dt = datetime.now(UTC) - timedelta(minutes=5)
         assert "m ago" in _age(dt)
 
 
 class TestTimeline:
     def test_single_span_produces_one_line(self) -> None:
         from keeto.dashboard.tui.widgets.timeline import build_waterfall
+
         trace = _make_trace("t1", latency_ms=500.0)
         lines = build_waterfall(trace, bar_cols=40).splitlines()
         assert len(lines) == 1
 
     def test_bar_contains_block_char(self) -> None:
-        from keeto.dashboard.tui.widgets.timeline import build_waterfall, _BAR_CHAR
+        from keeto.dashboard.tui.widgets.timeline import _BAR_CHAR, build_waterfall
+
         trace = _make_trace("t1", latency_ms=500.0)
         result = build_waterfall(trace, bar_cols=40)
         assert _BAR_CHAR in result
 
     def test_no_spans_returns_placeholder(self) -> None:
         from keeto.dashboard.tui.widgets.timeline import build_waterfall
+
         trace = Trace(trace_id="empty")
         result = build_waterfall(trace)
         assert "no spans" in result
 
     def test_multiple_spans_multiple_lines(self) -> None:
-        from datetime import timedelta
+        from keeto.core.span import Span
         from keeto.dashboard.tui.widgets.timeline import build_waterfall
-        from keeto.core.span import Span, SpanStatus
+
         trace = Trace(trace_id="multi")
         for i in range(3):
             sp = Span(trace_id="multi", span_id=f"s{i}", name=f"span{i}")
@@ -207,6 +212,7 @@ class TestTimeline:
 
     def test_latency_shown_in_output(self) -> None:
         from keeto.dashboard.tui.widgets.timeline import build_waterfall
+
         trace = _make_trace("t1", latency_ms=750.0)
         result = build_waterfall(trace, bar_cols=40)
         assert "750ms" in result
@@ -216,15 +222,15 @@ class TestPerformanceView:
     @pytest.mark.asyncio
     async def test_mounts(self, storage: MemoryStorage) -> None:
         app = KeetoApp(storage=storage)
-        async with app.run_test(headless=True) as pilot:
+        async with app.run_test(headless=True):
             assert app.query_one(PerformanceView) is not None
 
     @pytest.mark.asyncio
     async def test_refresh_data_populates_table(self, storage: MemoryStorage) -> None:
         traces = [
-            _make_trace("t1", model="gpt-4o",      provider="openai",    latency_ms=300),
-            _make_trace("t2", model="gpt-4o",      provider="openai",    latency_ms=600),
-            _make_trace("t3", model="claude-3-5",  provider="anthropic", latency_ms=800),
+            _make_trace("t1", model="gpt-4o", provider="openai", latency_ms=300),
+            _make_trace("t2", model="gpt-4o", provider="openai", latency_ms=600),
+            _make_trace("t3", model="claude-3-5", provider="anthropic", latency_ms=800),
         ]
         app = KeetoApp(storage=storage)
         async with app.run_test(headless=True) as pilot:
@@ -232,6 +238,7 @@ class TestPerformanceView:
             pv.refresh_data(traces)
             await pilot.pause()
             from textual.widgets import DataTable
+
             table = pv.query_one(DataTable)
             assert table.row_count == 2  # two distinct models
 
@@ -239,19 +246,23 @@ class TestPerformanceView:
 class TestPercentileHelper:
     def test_empty(self) -> None:
         from keeto.dashboard.tui.widgets.performance import _percentile
+
         assert _percentile([], 50) is None
 
     def test_single(self) -> None:
         from keeto.dashboard.tui.widgets.performance import _percentile
+
         assert _percentile([100.0], 50) == 100.0
 
     def test_p50(self) -> None:
         from keeto.dashboard.tui.widgets.performance import _percentile
+
         vals = [100.0, 200.0, 300.0, 400.0, 500.0]
         assert _percentile(vals, 50) == pytest.approx(300.0)
 
     def test_p95(self) -> None:
         from keeto.dashboard.tui.widgets.performance import _percentile
+
         vals = list(range(1, 101, 1))
         result = _percentile([float(v) for v in vals], 95)
         assert result is not None
@@ -261,17 +272,20 @@ class TestPercentileHelper:
 class TestHistogram:
     def test_no_data_placeholder(self) -> None:
         from keeto.dashboard.tui.widgets.performance import _build_histogram
+
         assert _build_histogram([]) == "(no data)"
 
     def test_buckets_present(self) -> None:
-        from keeto.dashboard.tui.widgets.performance import _build_histogram, _BUCKETS
+        from keeto.dashboard.tui.widgets.performance import _build_histogram
+
         result = _build_histogram([50.0, 200.0, 700.0])
         # All bucket labels should be present (some with 0 count bars)
         assert "<100ms" in result
         assert "100-250ms" in result
 
     def test_bar_char_present(self) -> None:
-        from keeto.dashboard.tui.widgets.performance import _build_histogram, _HIST_BAR
+        from keeto.dashboard.tui.widgets.performance import _HIST_BAR, _build_histogram
+
         result = _build_histogram([100.0, 100.0, 500.0])
         assert _HIST_BAR in result
 
@@ -280,6 +294,7 @@ class TestSearchFilter:
     @pytest.mark.asyncio
     async def test_filter_by_model(self, storage: MemoryStorage) -> None:
         from keeto.dashboard.tui.widgets.traces import TracesView
+
         traces = [
             _make_trace("t1", model="gpt-4o"),
             _make_trace("t2", model="claude-3-5"),
@@ -297,6 +312,7 @@ class TestSearchFilter:
     @pytest.mark.asyncio
     async def test_filter_by_provider(self, storage: MemoryStorage) -> None:
         from keeto.dashboard.tui.widgets.traces import TracesView
+
         traces = [
             _make_trace("t1", provider="openai"),
             _make_trace("t2", provider="anthropic"),
@@ -315,6 +331,7 @@ class TestSearchFilter:
     @pytest.mark.asyncio
     async def test_filter_error_keyword(self, storage: MemoryStorage) -> None:
         from keeto.dashboard.tui.widgets.traces import TracesView
+
         traces = [
             _make_trace("t1", error=False),
             _make_trace("t2", error=True),
@@ -332,6 +349,7 @@ class TestSearchFilter:
     @pytest.mark.asyncio
     async def test_empty_filter_shows_all(self, storage: MemoryStorage) -> None:
         from keeto.dashboard.tui.widgets.traces import TracesView
+
         traces = [_make_trace(f"t{i}") for i in range(5)]
         app = KeetoApp(storage=storage)
         async with app.run_test(headless=True) as pilot:
@@ -436,8 +454,7 @@ class TestLiveRefresh:
         """_broadcast_traces should reach TracesView, CostView, and PerformanceView."""
         traces = [
             _make_trace("t1", model="gpt-4o", cost_usd=0.001, latency_ms=300),
-            _make_trace("t2", model="claude-3-5", provider="anthropic",
-                        cost_usd=0.002, latency_ms=600),
+            _make_trace("t2", model="claude-3-5", provider="anthropic", cost_usd=0.002, latency_ms=600),
         ]
         app = KeetoApp(storage=storage)
         async with app.run_test(headless=True) as pilot:
@@ -445,6 +462,7 @@ class TestLiveRefresh:
             await pilot.pause()
             # All three views should now show 2 distinct models
             from textual.widgets import DataTable
+
             cost_table = app.query_one(CostView).query_one(DataTable)
             perf_table = app.query_one(PerformanceView).query_one(DataTable)
             trace_table = app.query_one(TraceListWidget).query_one(DataTable)
@@ -457,13 +475,15 @@ class TestCostView:
     @pytest.mark.asyncio
     async def test_cost_view_mounts(self, storage: MemoryStorage) -> None:
         app = KeetoApp(storage=storage)
-        async with app.run_test(headless=True) as pilot:
+        async with app.run_test(headless=True):
             from keeto.dashboard.tui.widgets.cost import CostView
+
             assert app.query_one(CostView) is not None
 
     @pytest.mark.asyncio
     async def test_refresh_data_populates_table(self, storage: MemoryStorage) -> None:
         from keeto.dashboard.tui.widgets.cost import CostView
+
         traces = [
             _make_trace("t1", model="gpt-4o", cost_usd=0.001),
             _make_trace("t2", model="gpt-4o", cost_usd=0.002),
@@ -480,5 +500,6 @@ class TestCostView:
 
     def test_pct_helper(self) -> None:
         from keeto.dashboard.tui.widgets.cost import _pct
+
         assert _pct(1.0, 4.0) == "25.0%"
         assert _pct(0.0, 0.0) == "—"

@@ -19,12 +19,11 @@ import json
 import os
 import sys
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
 from keeto.core.span import Span, SpanKind, SpanStatus, Trace
-
 
 # ---------------------------------------------------------------------------
 # Keeto → LangSmith
@@ -115,10 +114,7 @@ def export_langsmith(
     try:
         import langsmith  # type: ignore[import-untyped]
     except ImportError as exc:
-        raise ImportError(
-            "LangSmith upload requires the langsmith package. "
-            "Install: pip install langsmith"
-        ) from exc
+        raise ImportError("LangSmith upload requires the langsmith package. Install: pip install langsmith") from exc
 
     key = api_key or os.environ.get("LANGCHAIN_API_KEY") or os.environ.get("LANGSMITH_API_KEY")
     client = langsmith.Client(api_key=key, api_url=api_url)
@@ -130,6 +126,7 @@ def export_langsmith(
 # LangSmith → Keeto
 # ---------------------------------------------------------------------------
 
+
 def _run_to_span(run: Any) -> Span:
     """Convert a LangSmith run (dict or Run object) to a Keeto Span."""
     if not isinstance(run, dict):
@@ -137,9 +134,9 @@ def _run_to_span(run: Any) -> Span:
 
     def _dt(val: Any) -> datetime:
         if val is None:
-            return datetime.now(timezone.utc)
+            return datetime.now(UTC)
         if isinstance(val, datetime):
-            return val if val.tzinfo else val.replace(tzinfo=timezone.utc)
+            return val if val.tzinfo else val.replace(tzinfo=UTC)
         return datetime.fromisoformat(str(val).replace("Z", "+00:00"))
 
     run_type = run.get("run_type", "chain")
@@ -206,10 +203,7 @@ def import_from_langsmith(
     try:
         import langsmith  # type: ignore[import-untyped]
     except ImportError as exc:
-        raise ImportError(
-            "LangSmith import requires the langsmith package. "
-            "Install: pip install langsmith"
-        ) from exc
+        raise ImportError("LangSmith import requires the langsmith package. Install: pip install langsmith") from exc
 
     key = api_key or os.environ.get("LANGCHAIN_API_KEY") or os.environ.get("LANGSMITH_API_KEY")
     client = langsmith.Client(api_key=key, api_url=api_url)
@@ -220,9 +214,7 @@ def import_from_langsmith(
     for run in runs:
         span = _run_to_span(run)
         if span.trace_id not in trace_map:
-            trace_map[span.trace_id] = Trace(
-                trace_id=span.trace_id, start_time=span.start_time
-            )
+            trace_map[span.trace_id] = Trace(trace_id=span.trace_id, start_time=span.start_time)
         trace_map[span.trace_id].add_span(span)
 
     return list(trace_map.values())

@@ -12,17 +12,19 @@ Refreshed every 2s by KeetoApp's poll loop via refresh_data(traces).
 
 from __future__ import annotations
 
+import contextlib
 from collections import defaultdict
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING, ClassVar
 
-from textual.app import ComposeResult
 from textual.widget import Widget
 from textual.widgets import DataTable, Label, Static
 
 from keeto.dashboard.tui.widgets._utils import _fmt_cost, _fmt_tokens
 
 if TYPE_CHECKING:
+    from textual.app import ComposeResult
+
     from keeto.core.span import Trace
     from keeto.storage.base import StorageBackend
 
@@ -31,6 +33,7 @@ if TYPE_CHECKING:
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _pct(part: float, total: float) -> str:
     if total == 0:
         return "—"
@@ -38,13 +41,14 @@ def _pct(part: float, total: float) -> str:
 
 
 def _midnight_utc() -> datetime:
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     return now.replace(hour=0, minute=0, second=0, microsecond=0)
 
 
 # ---------------------------------------------------------------------------
 # CostSummaryBar — three stat chips at the top
 # ---------------------------------------------------------------------------
+
 
 class _StatChip(Static):
     DEFAULT_CSS = """
@@ -68,15 +72,14 @@ class _StatChip(Static):
         yield Label(f"[bold]{self._value}[/bold]", markup=True, id=self._chip_id)
 
     def set_value(self, value: str) -> None:
-        try:
+        with contextlib.suppress(Exception):
             self.query_one(f"#{self._chip_id}").update(f"[bold]{value}[/bold]")
-        except Exception:
-            pass
 
 
 # ---------------------------------------------------------------------------
 # CostView
 # ---------------------------------------------------------------------------
+
 
 class CostView(Widget):
     DEFAULT_CSS: ClassVar[str] = """
@@ -106,29 +109,27 @@ class CostView(Widget):
     """
 
     _MODEL_COLS: ClassVar[list[tuple[str, str, int]]] = [
-        ("Model",     "model",    22),
-        ("Provider",  "provider",  9),
-        ("Requests",  "req",       9),
-        ("In tok",    "in",        8),
-        ("Out tok",   "out",       8),
-        ("Cost",      "cost",     10),
-        ("Share",     "share",     7),
+        ("Model", "model", 22),
+        ("Provider", "provider", 9),
+        ("Requests", "req", 9),
+        ("In tok", "in", 8),
+        ("Out tok", "out", 8),
+        ("Cost", "cost", 10),
+        ("Share", "share", 7),
     ]
 
-    def __init__(self, storage: "StorageBackend") -> None:
+    def __init__(self, storage: StorageBackend) -> None:
         super().__init__()
         self._storage = storage
 
     def compose(self) -> ComposeResult:
         with Static(id="cost-chips"):
-            yield _StatChip("Session cost",  "chip-session", "—")
-            yield _StatChip("Today's cost",  "chip-today",   "—")
-            yield _StatChip("Avg / request", "chip-avg",     "—")
+            yield _StatChip("Session cost", "chip-session", "—")
+            yield _StatChip("Today's cost", "chip-today", "—")
+            yield _StatChip("Avg / request", "chip-avg", "—")
 
         yield Label("PER-MODEL BREAKDOWN", id="section-label")
-        table: DataTable[str] = DataTable(
-            id="model-table", cursor_type="row", zebra_stripes=True
-        )
+        table: DataTable[str] = DataTable(id="model-table", cursor_type="row", zebra_stripes=True)
         yield table
         yield Label(
             "[dim]No traces yet — start making AI calls[/dim]",
@@ -141,7 +142,7 @@ class CostView(Widget):
         for label, key, width in self._MODEL_COLS:
             table.add_column(label, key=key, width=width)
 
-    def refresh_data(self, traces: list["Trace"]) -> None:
+    def refresh_data(self, traces: list[Trace]) -> None:
         """Called every 2s by KeetoApp._poll_storage()."""
         if not traces:
             return
@@ -181,7 +182,7 @@ class CostView(Widget):
             f"[yellow]{_fmt_cost(today_cost)}[/yellow]",
             _fmt_cost(avg),
         ]
-        for chip, lbl, val in zip(chips, labels, values):
+        for chip, _lbl, val in zip(chips, labels, values, strict=False):
             chip.set_value(val)
 
         # Update table
@@ -190,14 +191,10 @@ class CostView(Widget):
         incoming_keys = set(model_stats.keys())
 
         for key in existing_keys - incoming_keys:
-            try:
+            with contextlib.suppress(Exception):
                 table.remove_row(key)
-            except Exception:
-                pass
 
-        sorted_models = sorted(
-            model_stats.items(), key=lambda kv: float(kv[1]["cost"]), reverse=True
-        )
+        sorted_models = sorted(model_stats.items(), key=lambda kv: float(kv[1]["cost"]), reverse=True)
 
         for model, stats in sorted_models:
             row_data = [
@@ -211,10 +208,8 @@ class CostView(Widget):
             ]
             if model in existing_keys:
                 for col_idx, cell in enumerate(row_data):
-                    try:
+                    with contextlib.suppress(Exception):
                         table.update_cell(model, self._MODEL_COLS[col_idx][1], cell)
-                    except Exception:
-                        pass
             else:
                 table.add_row(*row_data, key=model)
 

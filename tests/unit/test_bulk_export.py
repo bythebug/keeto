@@ -4,12 +4,12 @@ from __future__ import annotations
 
 import asyncio
 import json
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pytest
 
-from keeto.core.span import Span, SpanKind, SpanStatus, Trace
+from keeto.core.span import Span, SpanKind, SpanStatus
 from keeto.storage.memory import MemoryStorage
 from keeto.storage.sqlite import SQLiteStorage
 
@@ -27,13 +27,14 @@ def _make_span(trace_id: str, start: datetime, provider: str = "openai") -> Span
     return span
 
 
-BASE = datetime(2024, 1, 15, 12, 0, 0, tzinfo=timezone.utc)
-SPANS = [_make_span(f"trace{i:02d}{'0'*28}", BASE + timedelta(days=i)) for i in range(5)]
+BASE = datetime(2024, 1, 15, 12, 0, 0, tzinfo=UTC)
+SPANS = [_make_span(f"trace{i:02d}{'0' * 28}", BASE + timedelta(days=i)) for i in range(5)]
 
 
 # ---------------------------------------------------------------------------
 # MemoryStorage date range
 # ---------------------------------------------------------------------------
+
 
 class TestMemoryStorageDateRange:
     @pytest.fixture()
@@ -73,6 +74,7 @@ class TestMemoryStorageDateRange:
 # SQLiteStorage date range
 # ---------------------------------------------------------------------------
 
+
 class TestSQLiteStorageDateRange:
     @pytest.fixture()
     async def storage(self, tmp_path: Path) -> SQLiteStorage:
@@ -108,8 +110,9 @@ class TestSQLiteStorageDateRange:
 # called from an already-running event loop.
 # ---------------------------------------------------------------------------
 
+
 class TestMonitorExportDateRange:
-    def _populated_monitor(self) -> "Monitor":  # type: ignore[name-defined]  # noqa: F821
+    def _populated_monitor(self) -> Monitor:  # type: ignore[name-defined]  # noqa: F821
         from keeto.core.monitor import Monitor
 
         async def _populate(storage: MemoryStorage) -> None:

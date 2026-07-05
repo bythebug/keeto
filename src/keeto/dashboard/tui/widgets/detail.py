@@ -7,7 +7,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, ClassVar
 
-from textual.app import ComposeResult
 from textual.reactive import reactive
 from textual.widget import Widget
 from textual.widgets import Label, Static
@@ -15,12 +14,15 @@ from textual.widgets import Label, Static
 from keeto.dashboard.tui.widgets._utils import _fmt_cost, _fmt_lat, _fmt_tokens
 
 if TYPE_CHECKING:
+    from textual.app import ComposeResult
+
     from keeto.core.span import Span, Trace
 
 
 # ---------------------------------------------------------------------------
 # Section heading helper
 # ---------------------------------------------------------------------------
+
 
 class _SectionHeader(Static):
     DEFAULT_CSS = """
@@ -34,6 +36,7 @@ class _SectionHeader(Static):
 
 class _KV(Static):
     """Key-value row."""
+
     DEFAULT_CSS = """
     _KV {
         layout: horizontal;
@@ -63,6 +66,7 @@ class _KV(Static):
 # SpanRow — one row per span in the spans section
 # ---------------------------------------------------------------------------
 
+
 class _SpanRow(Static):
     DEFAULT_CSS = """
     _SpanRow {
@@ -77,7 +81,7 @@ class _SpanRow(Static):
     _SpanRow .sr-st    { width: 5;  text-align: center; }
     """
 
-    def __init__(self, span: "Span") -> None:
+    def __init__(self, span: Span) -> None:
         super().__init__()
         self._span = span
 
@@ -94,6 +98,7 @@ class _SpanRow(Static):
 # ---------------------------------------------------------------------------
 # TraceDetailWidget
 # ---------------------------------------------------------------------------
+
 
 class TraceDetailWidget(Widget):
     """
@@ -131,19 +136,19 @@ class TraceDetailWidget(Widget):
     """
 
     # Reactive so the panel re-renders when the selected trace changes.
-    trace: reactive["Trace | None"] = reactive(None)
+    trace: reactive[Trace | None] = reactive(None)
 
     def compose(self) -> ComposeResult:
         yield Static(id="detail-header")
         yield Static(id="detail-body")
 
-    def watch_trace(self, trace: "Trace | None") -> None:
+    def watch_trace(self, trace: Trace | None) -> None:
         self._rebuild(trace)
 
-    def show(self, trace: "Trace") -> None:
+    def show(self, trace: Trace) -> None:
         self.trace = trace
 
-    def _rebuild(self, trace: "Trace | None") -> None:
+    def _rebuild(self, trace: Trace | None) -> None:
         header = self.query_one("#detail-header")
         body = self.query_one("#detail-body")
         header.remove_children()
@@ -161,9 +166,7 @@ class TraceDetailWidget(Widget):
         # ------------------------------------------------------------------
         # 1. Header
         # ------------------------------------------------------------------
-        status_markup = (
-            "[red]✗ error[/red]" if trace.has_error else "[green]✓ ok[/green]"
-        )
+        status_markup = "[red]✗ error[/red]" if trace.has_error else "[green]✓ ok[/green]"
         title = f"[bold]{trace.trace_id}[/bold]"
         meta_parts = [
             trace.provider or "—",
@@ -179,7 +182,7 @@ class TraceDetailWidget(Widget):
         # ------------------------------------------------------------------
         # 2. Timeline waterfall (#25)
         # ------------------------------------------------------------------
-        from keeto.dashboard.tui.widgets.timeline import TimelineWidget  # noqa: PLC0415
+        from keeto.dashboard.tui.widgets.timeline import TimelineWidget
 
         body.mount(_SectionHeader("TIMELINE"))
         tl = TimelineWidget()
@@ -211,8 +214,12 @@ class TraceDetailWidget(Widget):
 
         # Surface the most useful attrs first
         priority = [
-            "llm.model", "llm.message_count", "llm.finish_reason",
-            "llm.stream", "http.status_code", "http.latency_ms",
+            "llm.model",
+            "llm.message_count",
+            "llm.finish_reason",
+            "llm.stream",
+            "http.status_code",
+            "http.latency_ms",
         ]
         ordered = [(k, merged[k]) for k in priority if k in merged]
         ordered += [(k, v) for k, v in sorted(merged.items()) if k not in priority]
@@ -224,17 +231,12 @@ class TraceDetailWidget(Widget):
 
         # Token breakdown if available
         root = trace.root_span
-        if root and any(
-            x is not None
-            for x in [root.input_tokens, root.output_tokens, root.cached_tokens]
-        ):
+        if root and any(x is not None for x in [root.input_tokens, root.output_tokens, root.cached_tokens]):
             body.mount(_SectionHeader("TOKENS"))
             if root.input_tokens is not None:
                 body.mount(_KV("input", _fmt_tokens(root.input_tokens)))
             if root.cached_tokens:
-                body.mount(
-                    _KV("cached", f"{_fmt_tokens(root.cached_tokens)} [dim](discounted)[/dim]")
-                )
+                body.mount(_KV("cached", f"{_fmt_tokens(root.cached_tokens)} [dim](discounted)[/dim]"))
             if root.output_tokens is not None:
                 body.mount(_KV("output", _fmt_tokens(root.output_tokens)))
             if root.cost_usd is not None:

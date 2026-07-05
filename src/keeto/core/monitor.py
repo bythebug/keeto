@@ -13,8 +13,8 @@ from __future__ import annotations
 
 import contextlib
 import logging
-from collections.abc import Generator
-from typing import Any
+from datetime import UTC
+from typing import TYPE_CHECKING, Any
 
 from rich.console import Console
 
@@ -29,6 +29,9 @@ from keeto.core.context import (
 from keeto.core.pipeline import Pipeline
 from keeto.core.span import Span, SpanKind, SpanStatus, Trace
 from keeto.storage.memory import MemoryStorage
+
+if TYPE_CHECKING:
+    from collections.abc import Generator
 
 log = logging.getLogger(__name__)
 
@@ -129,10 +132,8 @@ class Monitor:
         self._started = False
         if self._registry:
             for plugin in self._registry.all():
-                try:
+                with contextlib.suppress(Exception):
                     plugin.uninstall()
-                except Exception:
-                    pass
 
     def use(self, plugin: Any) -> Monitor:
         """Fluent plugin registration. Can be called before or after start()."""
@@ -249,9 +250,7 @@ class Monitor:
                     f"(${self._session_cost_usd:.4f} >= ${self._budget_session_usd:.4f})[/yellow]"
                 )
                 if self._webhook:
-                    self._webhook.notify_budget(
-                        "session", self._session_cost_usd, self._budget_session_usd
-                    )
+                    self._webhook.notify_budget("session", self._session_cost_usd, self._budget_session_usd)
 
         if self._budget_daily_usd is not None:
             key = f"daily_{date.today()}"
@@ -262,9 +261,7 @@ class Monitor:
                     f"(${self._daily_cost_usd:.4f} >= ${self._budget_daily_usd:.4f})[/yellow]"
                 )
                 if self._webhook:
-                    self._webhook.notify_budget(
-                        "daily", self._daily_cost_usd, self._budget_daily_usd
-                    )
+                    self._webhook.notify_budget("daily", self._daily_cost_usd, self._budget_daily_usd)
 
     # ------------------------------------------------------------------
     # Token budget tracking (issue #76)
@@ -310,6 +307,7 @@ class Monitor:
 
         if self._token_budget_monthly is not None:
             from datetime import date as _date
+
             key = f"token_monthly_{_date.today().year}_{_date.today().month}"
             if key not in self._budget_alert_fired and self._session_tokens >= self._token_budget_monthly:
                 self._budget_alert_fired.add(key)
@@ -336,14 +334,8 @@ class Monitor:
         return {
             "session_usd": round(self._session_cost_usd, 6),
             "today_usd": round(self._daily_cost_usd, 6),
-            "by_provider": {
-                k: round(v, 6)
-                for k, v in sorted(self._cost_by_provider.items(), key=lambda x: -x[1])
-            },
-            "by_model": {
-                k: round(v, 6)
-                for k, v in sorted(self._cost_by_model.items(), key=lambda x: -x[1])
-            },
+            "by_provider": {k: round(v, 6) for k, v in sorted(self._cost_by_provider.items(), key=lambda x: -x[1])},
+            "by_model": {k: round(v, 6) for k, v in sorted(self._cost_by_model.items(), key=lambda x: -x[1])},
         }
 
     # ------------------------------------------------------------------
@@ -387,9 +379,7 @@ class Monitor:
         try:
             from keeto.dashboard.tui.app import KeetoApp
         except ImportError:
-            self._console.print(
-                "[red]TUI dashboard requires textual. Install with: pip install keeto[tui][/red]"
-            )
+            self._console.print("[red]TUI dashboard requires textual. Install with: pip install keeto[tui][/red]")
             return
         KeetoApp(storage=self._storage).run()
 
@@ -397,9 +387,7 @@ class Monitor:
         try:
             from keeto.dashboard.web.server import start_web_dashboard
         except ImportError:
-            self._console.print(
-                "[red]Web dashboard requires fastapi. Install with: pip install keeto[web][/red]"
-            )
+            self._console.print("[red]Web dashboard requires fastapi. Install with: pip install keeto[web][/red]")
             return
         start_web_dashboard(self._storage, block=False)
 
@@ -465,22 +453,20 @@ class Monitor:
             monitor.export("traces.json", since="2024-01-01", until="2024-01-31")
         """
         import asyncio
-        from datetime import datetime, timezone
+        from datetime import datetime
 
         def _parse_dt(v: Any) -> datetime | None:
             if v is None:
                 return None
             if isinstance(v, datetime):
-                return v if v.tzinfo else v.replace(tzinfo=timezone.utc)
+                return v if v.tzinfo else v.replace(tzinfo=UTC)
             dt = datetime.fromisoformat(str(v))
-            return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
+            return dt if dt.tzinfo else dt.replace(tzinfo=UTC)
 
         since_dt = _parse_dt(since)
         until_dt = _parse_dt(until)
 
-        traces = asyncio.run(
-            self._storage.list_traces(limit=10_000, since=since_dt, until=until_dt)
-        )
+        traces = asyncio.run(self._storage.list_traces(limit=10_000, since=since_dt, until=until_dt))
 
         if format is None and path:
             ext = path.rsplit(".", 1)[-1].lower()
@@ -488,24 +474,26 @@ class Monitor:
 
         if format == "json":
             from keeto.exporters.json import export_json
+
             export_json(traces, path)
         elif format == "csv":
             from keeto.exporters.csv import export_csv
+
             export_csv(traces, path)
         elif format == "otel":
             from keeto.exporters.otel import export_otel
+
             export_otel(traces, **kwargs)
         elif format == "langsmith":
             from keeto.exporters.langsmith import export_langsmith
+
             export_langsmith(traces, path=path, **kwargs)
         elif format == "mlflow":
             from keeto.exporters.mlflow import export_mlflow
+
             export_mlflow(traces, **kwargs)
         else:
-            raise ValueError(
-                f"Unknown export format: {format!r}. "
-                "Use 'json', 'csv', 'otel', 'langsmith', or 'mlflow'."
-            )
+            raise ValueError(f"Unknown export format: {format!r}. Use 'json', 'csv', 'otel', 'langsmith', or 'mlflow'.")
 
     # ------------------------------------------------------------------
     # Analysis
@@ -567,13 +555,16 @@ class _TracesProxy:
 
     def __getitem__(self, index: int) -> Trace:
         import asyncio
+
         traces = asyncio.run(self._storage.list_traces(limit=1000))
         return traces[index]
 
     def __len__(self) -> int:
         import asyncio
+
         return len(asyncio.run(self._storage.list_traces(limit=10_000)))
 
     def __iter__(self):  # type: ignore[override]
         import asyncio
+
         return iter(asyncio.run(self._storage.list_traces(limit=10_000)))

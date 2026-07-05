@@ -110,6 +110,7 @@ class PrometheusExporter:
     def __init__(self) -> None:
         try:
             import prometheus_client  # type: ignore[import-untyped]
+
             self._pc = prometheus_client
         except ImportError:
             self._pc = None

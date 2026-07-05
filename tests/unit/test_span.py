@@ -1,13 +1,14 @@
 """Tests for Span and Trace models."""
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import pytest
+
 from keeto.core.span import Span, SpanKind, SpanStatus, Trace
 
 
 def make_span(**kwargs: object) -> Span:
-    defaults = dict(trace_id="trace-1", span_id="span-1", name="test")
+    defaults = {"trace_id": "trace-1", "span_id": "span-1", "name": "test"}
     return Span(**(defaults | kwargs))  # type: ignore[arg-type]
 
 
@@ -32,7 +33,7 @@ class TestSpan:
         assert span.status_message == "oops"
 
     def test_latency_ms(self) -> None:
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         span = make_span(start_time=now)
         span.end_time = now + timedelta(milliseconds=1234)
         assert span.latency_ms == pytest.approx(1234.0, abs=1.0)

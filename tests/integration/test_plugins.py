@@ -12,9 +12,10 @@ Run with: pytest tests/integration/test_plugins.py -v
 
 from __future__ import annotations
 
-import json
+import contextlib
+from datetime import UTC
 from typing import Any
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import httpx
 import pytest
@@ -23,7 +24,6 @@ import respx
 from keeto.core.monitor import Monitor
 from keeto.core.span import SpanStatus
 from keeto.storage.memory import MemoryStorage
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -153,13 +153,11 @@ class TestOpenAIPlugin:
             import openai
 
             client = openai.OpenAI(api_key="test-key", max_retries=0)
-            try:
+            with contextlib.suppress(Exception):
                 client.chat.completions.create(
                     model="gpt-4o",
                     messages=[{"role": "user", "content": "Hello"}],
                 )
-            except Exception:
-                pass
 
         traces = await self.storage.list_traces(limit=10)
         assert len(traces) == 1
@@ -303,9 +301,7 @@ class TestAnthropicPlugin:
         resp_body = _anthropic_messages_response(input_tokens=120, output_tokens=60)
 
         with respx.mock:
-            respx.post("https://api.anthropic.com/v1/messages").mock(
-                return_value=httpx.Response(200, json=resp_body)
-            )
+            respx.post("https://api.anthropic.com/v1/messages").mock(return_value=httpx.Response(200, json=resp_body))
             import anthropic
 
             client = anthropic.Anthropic(api_key="test-key")
@@ -335,9 +331,7 @@ class TestAnthropicPlugin:
         resp_body = _anthropic_messages_response(tool_uses=tool_uses)
 
         with respx.mock:
-            respx.post("https://api.anthropic.com/v1/messages").mock(
-                return_value=httpx.Response(200, json=resp_body)
-            )
+            respx.post("https://api.anthropic.com/v1/messages").mock(return_value=httpx.Response(200, json=resp_body))
             import anthropic
 
             client = anthropic.Anthropic(api_key="test-key")
@@ -345,7 +339,9 @@ class TestAnthropicPlugin:
                 model="claude-3-5-sonnet-20241022",
                 max_tokens=100,
                 messages=[{"role": "user", "content": "Search for something"}],
-                tools=[{"name": "search", "description": "Search", "input_schema": {"type": "object", "properties": {}}}],
+                tools=[
+                    {"name": "search", "description": "Search", "input_schema": {"type": "object", "properties": {}}}
+                ],
             )
 
         traces = await self.storage.list_traces(limit=10)
@@ -373,14 +369,12 @@ class TestAnthropicPlugin:
             import anthropic
 
             client = anthropic.Anthropic(api_key="test-key", max_retries=0)
-            try:
+            with contextlib.suppress(Exception):
                 client.messages.create(
                     model="claude-3-5-sonnet-20241022",
                     max_tokens=100,
                     messages=[{"role": "user", "content": "Hello"}],
                 )
-            except Exception:
-                pass
 
         traces = await self.storage.list_traces(limit=10)
         span = traces[0].root_span
@@ -458,8 +452,7 @@ class TestCostSummary:
 class TestRecommendationsEngine:
     def test_agent_loop_detection(self) -> None:
         from keeto.analyzers.recommendations import RecommendationsEngine
-        from keeto.core.span import Span, SpanKind, SpanStatus
-        from keeto.core.span import Trace
+        from keeto.core.span import Span, SpanKind, SpanStatus, Trace
 
         engine = RecommendationsEngine()
         traces = []
@@ -478,17 +471,13 @@ class TestRecommendationsEngine:
 
     def test_cost_comparison(self) -> None:
         from keeto.analyzers.recommendations import RecommendationsEngine
-        from keeto.core.span import Span, SpanKind, SpanStatus
-        from keeto.core.span import Trace
+        from keeto.core.span import Span, SpanKind, SpanStatus, Trace
 
         engine = RecommendationsEngine()
         traces = []
         for i, (provider, cost) in enumerate([("openai", 1.0), ("openai", 1.0), ("anthropic", 0.1)]):
             trace = Trace(trace_id=f"t{i}")
-            span = Span(
-                trace_id=f"t{i}", span_id=f"s{i}", name="llm.call",
-                kind=SpanKind.LLM, provider=provider
-            )
+            span = Span(trace_id=f"t{i}", span_id=f"s{i}", name="llm.call", kind=SpanKind.LLM, provider=provider)
             span.cost_usd = cost
             span.finish(status=SpanStatus.OK)
             trace.add_span(span)
@@ -516,9 +505,9 @@ class TestLiteLLMPlugin:
     @pytest.mark.asyncio
     async def test_success_callback_creates_span(self) -> None:
         pytest.importorskip("litellm")
-        from datetime import datetime, timezone
+        from datetime import datetime
 
-        from keeto.integrations.litellm.plugin import LiteLLMPlugin, _LiteLLMLogger
+        from keeto.integrations.litellm.plugin import LiteLLMPlugin
 
         plugin = LiteLLMPlugin()
         plugin.install(self.monitor)
@@ -526,8 +515,8 @@ class TestLiteLLMPlugin:
         logger = plugin._logger
         assert logger is not None
 
-        start_time = datetime(2024, 1, 1, 0, 0, 0, tzinfo=timezone.utc)
-        end_time = datetime(2024, 1, 1, 0, 0, 1, tzinfo=timezone.utc)
+        start_time = datetime(2024, 1, 1, 0, 0, 0, tzinfo=UTC)
+        end_time = datetime(2024, 1, 1, 0, 0, 1, tzinfo=UTC)
 
         mock_usage = MagicMock()
         mock_usage.prompt_tokens = 50

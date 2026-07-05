@@ -11,6 +11,7 @@ to extract SDK-specific semantic data (model name, token counts, etc.).
 
 from __future__ import annotations
 
+import contextlib
 import json
 import time
 from typing import Any
@@ -83,10 +84,8 @@ class RecordingAsyncTransport(httpx.AsyncBaseTransport):
                 else:
                     span.finish(status=SpanStatus.OK)
                 # Let the plugin enrich from the response body
-                try:
+                with contextlib.suppress(Exception):
                     self._on_span(span, request, response)
-                except Exception:
-                    pass
             else:
                 span.finish(status=SpanStatus.UNSET)
 
@@ -138,10 +137,8 @@ class RecordingSyncTransport(httpx.BaseTransport):
                 span.set_attribute("http.status_code", response.status_code)
                 status = SpanStatus.ERROR if response.status_code >= 400 else SpanStatus.OK
                 span.finish(status=status)
-                try:
+                with contextlib.suppress(Exception):
                     self._on_span(span, request, response)
-                except Exception:
-                    pass
             else:
                 span.finish(status=SpanStatus.UNSET)
 

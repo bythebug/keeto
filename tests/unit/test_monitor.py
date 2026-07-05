@@ -6,6 +6,7 @@ import time
 from pathlib import Path
 
 import pytest
+
 from keeto.core.monitor import Monitor
 from keeto.core.span import SpanKind, SpanStatus
 from keeto.storage.memory import MemoryStorage
@@ -54,9 +55,8 @@ class TestMonitorSpan:
         assert span.status == SpanStatus.OK
 
     def test_span_records_error(self, fresh_monitor: Monitor) -> None:
-        with pytest.raises(ValueError):
-            with fresh_monitor.span("failing-op"):
-                raise ValueError("test error")
+        with pytest.raises(ValueError), fresh_monitor.span("failing-op"):
+            raise ValueError("test error")
 
         time.sleep(0.2)
         traces = asyncio.run(fresh_monitor._storage.list_traces())

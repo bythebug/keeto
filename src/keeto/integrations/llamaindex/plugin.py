@@ -25,7 +25,7 @@ class LlamaIndexPlugin(Plugin):
             from llama_index.core.instrumentation.event_handlers import BaseEventHandler
 
             class _KeetoEventHandler(BaseEventHandler):  # type: ignore[misc]
-                def __init__(inner_self) -> None:  # noqa: N805
+                def __init__(inner_self) -> None:
                     super().__init__()
                     inner_self._plugin = self
 
@@ -33,7 +33,7 @@ class LlamaIndexPlugin(Plugin):
                 def class_name(cls) -> str:
                     return "KeetoEventHandler"
 
-                def handle(inner_self, event: Any) -> None:  # noqa: N805
+                def handle(inner_self, event: Any) -> None:
                     inner_self._plugin._handle_event(event)
 
             self._handler = _KeetoEventHandler()
@@ -132,7 +132,7 @@ class LlamaIndexPlugin(Plugin):
         span_id = new_span_id()
         parent_span_id = get_current_span_id()
 
-        queries = getattr(event, "model_dict", {})
+        getattr(event, "model_dict", {})
         span = Span(
             trace_id=trace_id,
             span_id=span_id,

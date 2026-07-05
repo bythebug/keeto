@@ -1,6 +1,7 @@
 """Tests for the pricing / cost calculation module."""
 
 import pytest
+
 from keeto._pricing import PRICES, cost_usd
 
 

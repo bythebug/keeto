@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import io
 
-import pytest
 from rich.console import Console
 
 from keeto.core.span import Span, SpanStatus, Trace
@@ -37,6 +36,7 @@ def _make_trace(
         cost_usd=cost_usd,
     )
     from datetime import timedelta
+
     span.end_time = span.start_time + timedelta(milliseconds=latency_ms)
     span.finish(status=SpanStatus.ERROR if error else SpanStatus.OK)
     trace.add_span(span)
@@ -85,8 +85,8 @@ class TestRichDashboard:
         assert "100" in output
 
     def test_monitor_dashboard_rich_integration(self) -> None:
-        import asyncio
         import time
+
         from keeto.core.monitor import Monitor
         from keeto.storage.memory import MemoryStorage
 

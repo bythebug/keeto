@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextlib
 from typing import TYPE_CHECKING, Any, ClassVar
 
 from keeto.core.context import new_span_id, new_trace_id
@@ -24,10 +25,8 @@ class _KeetoTracingProcessor:
         pass
 
     def on_span_end(self, span: Any) -> None:
-        try:
+        with contextlib.suppress(Exception):
             self._emit(span)
-        except Exception:
-            pass
 
     def _emit(self, agents_span: Any) -> None:
         try:
@@ -129,6 +128,7 @@ class OpenAIAgentsPlugin(Plugin):
             return
         try:
             from agents.tracing import set_trace_processors
+
             set_trace_processors([])
         except Exception:
             pass

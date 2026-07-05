@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import pytest
 
@@ -20,7 +20,7 @@ def _make_trace(
     cost_usd: float = 0.002,
     error: bool = False,
 ) -> Trace:
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     span = Span(
         trace_id=trace_id,
         span_id="s1",

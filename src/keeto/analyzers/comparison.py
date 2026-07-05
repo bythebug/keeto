@@ -55,7 +55,7 @@ class TraceComparison:
         lines = [
             "keeto: trace comparison",
             f"  {'Field':<20} {'A':>14} {'B':>14} {'Δ':>14}",
-            f"  {'-'*64}",
+            f"  {'-' * 64}",
         ]
 
         def _row(label: str, a: object, b: object, delta: object = None) -> str:
@@ -73,22 +73,28 @@ class TraceComparison:
             delta = f"{self.latency_delta_ms:+.0f}ms" if self.latency_delta_ms is not None else ""
             lines.append(f"  {'Latency':<20} {a_lat:>14} {b_lat:>14} {delta:>14}")
 
-        lines.append(_row(
-            "Cost (USD)",
-            f"${self.cost_a_usd:.6f}",
-            f"${self.cost_b_usd:.6f}",
-            f"{'+' if self.cost_delta_usd >= 0 else ''}${self.cost_delta_usd:.6f}",
-        ))
-        lines.append(_row(
-            "Input tokens",
-            self.input_tokens_a,
-            self.input_tokens_b,
-            f"{self.input_tokens_b - self.input_tokens_a:+d}",
-        ))
-        lines.append(_row(
-            "Output tokens",
-            self.output_tokens_a,
-            self.output_tokens_b,
-            f"{self.output_tokens_b - self.output_tokens_a:+d}",
-        ))
+        lines.append(
+            _row(
+                "Cost (USD)",
+                f"${self.cost_a_usd:.6f}",
+                f"${self.cost_b_usd:.6f}",
+                f"{'+' if self.cost_delta_usd >= 0 else ''}${self.cost_delta_usd:.6f}",
+            )
+        )
+        lines.append(
+            _row(
+                "Input tokens",
+                self.input_tokens_a,
+                self.input_tokens_b,
+                f"{self.input_tokens_b - self.input_tokens_a:+d}",
+            )
+        )
+        lines.append(
+            _row(
+                "Output tokens",
+                self.output_tokens_a,
+                self.output_tokens_b,
+                f"{self.output_tokens_b - self.output_tokens_a:+d}",
+            )
+        )
         return "\n".join(lines)

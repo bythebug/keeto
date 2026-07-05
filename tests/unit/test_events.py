@@ -1,8 +1,8 @@
 """Tests for the Event hierarchy."""
 
 import pytest
+
 from keeto.core.events import (
-    BaseEvent,
     CustomEvent,
     ErrorEvent,
     LLMRequestEndEvent,
@@ -27,7 +27,7 @@ class TestEventImmutability:
             model="gpt-4o",
             messages=[],
         )
-        with pytest.raises(Exception):  # ValidationError or AttributeError
+        with pytest.raises((ValueError, TypeError, AttributeError)):
             evt.provider = "changed"  # type: ignore[misc]
 
     def test_event_id_unique(self) -> None:
@@ -65,9 +65,7 @@ class TestLLMRequestEvents:
         assert evt.cost_usd == pytest.approx(0.00045)
 
     def test_stream_chunk(self) -> None:
-        evt = LLMStreamChunkEvent(
-            **base_kwargs(), chunk_index=0, content="Hello", finish_reason=None
-        )
+        evt = LLMStreamChunkEvent(**base_kwargs(), chunk_index=0, content="Hello", finish_reason=None)
         assert evt.content == "Hello"
 
 
@@ -112,8 +110,6 @@ class TestReliabilityEvents:
 
 class TestCustomEvent:
     def test_custom_event(self) -> None:
-        evt = CustomEvent(
-            **base_kwargs(), name="vector-search", attributes={"results": 5}
-        )
+        evt = CustomEvent(**base_kwargs(), name="vector-search", attributes={"results": 5})
         assert evt.name == "vector-search"
         assert evt.attributes["results"] == 5
