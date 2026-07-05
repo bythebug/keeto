@@ -246,6 +246,34 @@ class TestOpenAIPlugin:
         assert span.attributes.get("llm.multimodal") is True
 
     @pytest.mark.asyncio
+    async def test_async_chat_completion_captured(self) -> None:
+        resp_body = _openai_chat_response(input_tokens=200, output_tokens=80)
+
+        async with respx.mock:
+            respx.post("https://api.openai.com/v1/chat/completions").mock(
+                return_value=httpx.Response(200, json=resp_body)
+            )
+            import openai
+
+            client = openai.AsyncOpenAI(api_key="test-key")
+            await client.chat.completions.create(
+                model="gpt-4o",
+                messages=[{"role": "user", "content": "Hello async"}],
+            )
+            await client.close()
+
+        await _flush()
+        traces = await self.storage.list_traces(limit=10)
+        assert len(traces) == 1
+        span = traces[0].root_span
+        assert span is not None
+        assert span.name == "openai.chat"
+        assert span.input_tokens == 200
+        assert span.output_tokens == 80
+        assert span.cost_usd is not None
+        assert span.status == SpanStatus.OK
+
+    @pytest.mark.asyncio
     async def test_embedding_captured(self) -> None:
         embedding_resp = {
             "object": "list",
@@ -342,6 +370,35 @@ class TestAnthropicPlugin:
         assert span.attributes.get("llm.tool_calls_count") == 1
         tool_call = span.attributes.get("llm.tool_calls", [])[0]
         assert tool_call["name"] == "search"
+
+    @pytest.mark.asyncio
+    async def test_async_messages_captured(self) -> None:
+        resp_body = _anthropic_messages_response(input_tokens=80, output_tokens=40)
+
+        async with respx.mock:
+            respx.post("https://api.anthropic.com/v1/messages").mock(
+                return_value=httpx.Response(200, json=resp_body)
+            )
+            import anthropic
+
+            client = anthropic.AsyncAnthropic(api_key="test-key")
+            await client.messages.create(
+                model="claude-3-5-sonnet-20241022",
+                max_tokens=100,
+                messages=[{"role": "user", "content": "Hello async"}],
+            )
+            await client.close()
+
+        await _flush()
+        traces = await self.storage.list_traces(limit=10)
+        assert len(traces) == 1
+        span = traces[0].root_span
+        assert span is not None
+        assert span.name == "anthropic.messages"
+        assert span.input_tokens == 80
+        assert span.output_tokens == 40
+        assert span.cost_usd is not None
+        assert span.status == SpanStatus.OK
 
     @pytest.mark.asyncio
     async def test_rate_limit_captured(self) -> None:
