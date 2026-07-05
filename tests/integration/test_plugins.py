@@ -12,6 +12,7 @@ Run with: pytest tests/integration/test_plugins.py -v
 
 from __future__ import annotations
 
+import asyncio
 import contextlib
 from datetime import UTC
 from typing import Any
@@ -24,6 +25,15 @@ import respx
 from keeto.core.monitor import Monitor
 from keeto.core.span import SpanStatus
 from keeto.storage.memory import MemoryStorage
+
+# The Keeto pipeline batches spans on a 50 ms timer in a background thread.
+# Tests must await this before reading storage to avoid a race condition.
+_FLUSH_WAIT = 0.25
+
+
+async def _flush() -> None:
+    """Wait for the background pipeline to flush its batch."""
+    await asyncio.sleep(_FLUSH_WAIT)
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -97,19 +107,19 @@ def _anthropic_messages_response(
 class TestOpenAIPlugin:
     def setup_method(self) -> None:
         pytest.importorskip("openai")
+        from keeto.integrations.openai.plugin import OpenAIPlugin
+
         self.monitor = _make_monitor()
         self.storage = self.monitor._storage
+        self.plugin = OpenAIPlugin()
+        self.plugin.install(self.monitor)
 
     def teardown_method(self) -> None:
+        self.plugin.uninstall()
         self.monitor.stop()
 
     @pytest.mark.asyncio
     async def test_chat_completion_captured(self) -> None:
-        from keeto.integrations.openai.plugin import OpenAIPlugin
-
-        plugin = OpenAIPlugin()
-        plugin.install(self.monitor)
-
         resp_body = _openai_chat_response(input_tokens=100, output_tokens=50)
 
         with respx.mock:
@@ -124,6 +134,7 @@ class TestOpenAIPlugin:
                 messages=[{"role": "user", "content": "Hello"}],
             )
 
+        await _flush()
         traces = await self.storage.list_traces(limit=10)
         assert len(traces) == 1
         span = traces[0].root_span
@@ -137,11 +148,6 @@ class TestOpenAIPlugin:
 
     @pytest.mark.asyncio
     async def test_rate_limit_captured(self) -> None:
-        from keeto.integrations.openai.plugin import OpenAIPlugin
-
-        plugin = OpenAIPlugin()
-        plugin.install(self.monitor)
-
         with respx.mock:
             respx.post("https://api.openai.com/v1/chat/completions").mock(
                 return_value=httpx.Response(
@@ -159,6 +165,7 @@ class TestOpenAIPlugin:
                     messages=[{"role": "user", "content": "Hello"}],
                 )
 
+        await _flush()
         traces = await self.storage.list_traces(limit=10)
         assert len(traces) == 1
         span = traces[0].root_span
@@ -168,11 +175,6 @@ class TestOpenAIPlugin:
 
     @pytest.mark.asyncio
     async def test_tool_calls_captured(self) -> None:
-        from keeto.integrations.openai.plugin import OpenAIPlugin
-
-        plugin = OpenAIPlugin()
-        plugin.install(self.monitor)
-
         tool_calls = [
             {
                 "id": "call_abc",
@@ -203,6 +205,7 @@ class TestOpenAIPlugin:
                 ],
             )
 
+        await _flush()
         traces = await self.storage.list_traces(limit=10)
         assert len(traces) == 1
         span = traces[0].root_span
@@ -214,11 +217,6 @@ class TestOpenAIPlugin:
 
     @pytest.mark.asyncio
     async def test_multimodal_detected(self) -> None:
-        from keeto.integrations.openai.plugin import OpenAIPlugin
-
-        plugin = OpenAIPlugin()
-        plugin.install(self.monitor)
-
         resp_body = _openai_chat_response()
 
         with respx.mock:
@@ -241,6 +239,7 @@ class TestOpenAIPlugin:
                 ],
             )
 
+        await _flush()
         traces = await self.storage.list_traces(limit=10)
         span = traces[0].root_span
         assert span is not None
@@ -248,11 +247,6 @@ class TestOpenAIPlugin:
 
     @pytest.mark.asyncio
     async def test_embedding_captured(self) -> None:
-        from keeto.integrations.openai.plugin import OpenAIPlugin
-
-        plugin = OpenAIPlugin()
-        plugin.install(self.monitor)
-
         embedding_resp = {
             "object": "list",
             "data": [{"object": "embedding", "embedding": [0.1] * 1536, "index": 0}],
@@ -269,6 +263,7 @@ class TestOpenAIPlugin:
             client = openai.OpenAI(api_key="test-key")
             client.embeddings.create(model="text-embedding-3-small", input=["Hello world"])
 
+        await _flush()
         traces = await self.storage.list_traces(limit=10)
         span = traces[0].root_span
         assert span is not None
@@ -285,19 +280,19 @@ class TestOpenAIPlugin:
 class TestAnthropicPlugin:
     def setup_method(self) -> None:
         pytest.importorskip("anthropic")
+        from keeto.integrations.anthropic.plugin import AnthropicPlugin
+
         self.monitor = _make_monitor()
         self.storage = self.monitor._storage
+        self.plugin = AnthropicPlugin()
+        self.plugin.install(self.monitor)
 
     def teardown_method(self) -> None:
+        self.plugin.uninstall()
         self.monitor.stop()
 
     @pytest.mark.asyncio
     async def test_messages_captured(self) -> None:
-        from keeto.integrations.anthropic.plugin import AnthropicPlugin
-
-        plugin = AnthropicPlugin()
-        plugin.install(self.monitor)
-
         resp_body = _anthropic_messages_response(input_tokens=120, output_tokens=60)
 
         with respx.mock:
@@ -311,6 +306,7 @@ class TestAnthropicPlugin:
                 messages=[{"role": "user", "content": "Hello"}],
             )
 
+        await _flush()
         traces = await self.storage.list_traces(limit=10)
         assert len(traces) == 1
         span = traces[0].root_span
@@ -322,11 +318,6 @@ class TestAnthropicPlugin:
 
     @pytest.mark.asyncio
     async def test_tool_use_captured(self) -> None:
-        from keeto.integrations.anthropic.plugin import AnthropicPlugin
-
-        plugin = AnthropicPlugin()
-        plugin.install(self.monitor)
-
         tool_uses = [{"type": "tool_use", "id": "toolu_01", "name": "search", "input": {"query": "test"}}]
         resp_body = _anthropic_messages_response(tool_uses=tool_uses)
 
@@ -344,6 +335,7 @@ class TestAnthropicPlugin:
                 ],
             )
 
+        await _flush()
         traces = await self.storage.list_traces(limit=10)
         span = traces[0].root_span
         assert span is not None
@@ -353,11 +345,6 @@ class TestAnthropicPlugin:
 
     @pytest.mark.asyncio
     async def test_rate_limit_captured(self) -> None:
-        from keeto.integrations.anthropic.plugin import AnthropicPlugin
-
-        plugin = AnthropicPlugin()
-        plugin.install(self.monitor)
-
         with respx.mock:
             respx.post("https://api.anthropic.com/v1/messages").mock(
                 return_value=httpx.Response(
@@ -376,6 +363,7 @@ class TestAnthropicPlugin:
                     messages=[{"role": "user", "content": "Hello"}],
                 )
 
+        await _flush()
         traces = await self.storage.list_traces(limit=10)
         span = traces[0].root_span
         assert span is not None
@@ -533,6 +521,7 @@ class TestLiteLLMPlugin:
 
         logger.log_success_event(kwargs, mock_response, start_time, end_time)
 
+        await _flush()
         traces = await self.storage.list_traces(limit=10)
         assert len(traces) == 1
         span = traces[0].root_span

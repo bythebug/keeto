@@ -64,6 +64,9 @@ class RecordingAsyncTransport(httpx.AsyncBaseTransport):
 
         try:
             response = await self._wrapped.handle_async_request(request)
+            # Eagerly read the body so _on_span can access response.content.
+            with contextlib.suppress(Exception):
+                await response.aread()
             return response
         except Exception as exc:
             error = exc
@@ -123,6 +126,10 @@ class RecordingSyncTransport(httpx.BaseTransport):
 
         try:
             response = self._wrapped.handle_request(request)
+            # Eagerly read the body so _on_span can access response.content.
+            # httpx caches the result, so the caller can still read it normally.
+            with contextlib.suppress(Exception):
+                response.read()
             return response
         except Exception as exc:
             error = exc

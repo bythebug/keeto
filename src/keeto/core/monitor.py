@@ -68,9 +68,9 @@ class Monitor:
         store_prompts: bool = True,
         auto: bool = True,
     ) -> None:
-        self._storage = storage or MemoryStorage()
+        self._storage = storage if storage is not None else MemoryStorage()
         self._pipeline = Pipeline(self._storage)
-        self._explicit_plugins: list[Any] = plugins or []
+        self._explicit_plugins: list[Any] = plugins if plugins is not None else []
         self._sample_rate = sample_rate
         self._scrub_pii = scrub_pii
         self._store_prompts = store_prompts

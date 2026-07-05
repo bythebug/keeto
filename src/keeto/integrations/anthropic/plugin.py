@@ -37,6 +37,8 @@ class AnthropicPlugin(Plugin):
     def __init__(self) -> None:
         self._monitor: Monitor | None = None
         self._patched_clients: list[Any] = []
+        self._original_sync_init: Any = None
+        self._original_async_init: Any = None
 
     def install(self, monitor: Monitor) -> None:
         self._monitor = monitor
@@ -48,6 +50,18 @@ class AnthropicPlugin(Plugin):
                 client._transport = original_transport
         self._patched_clients.clear()
 
+        try:
+            import anthropic
+
+            if self._original_sync_init is not None:
+                anthropic.Anthropic.__init__ = self._original_sync_init  # type: ignore[method-assign]
+                self._original_sync_init = None
+            if self._original_async_init is not None:
+                anthropic.AsyncAnthropic.__init__ = self._original_async_init  # type: ignore[method-assign]
+                self._original_async_init = None
+        except ImportError:
+            pass
+
     def _patch_anthropic(self) -> None:
         try:
             import anthropic
@@ -56,47 +70,55 @@ class AnthropicPlugin(Plugin):
 
         plugin = self
 
-        original_init = anthropic.Anthropic.__init__
+        self._original_sync_init = anthropic.Anthropic.__init__
 
         def patched_sync_init(self_client: Any, *args: Any, **kwargs: Any) -> None:
-            original_init(self_client, *args, **kwargs)
+            plugin._original_sync_init(self_client, *args, **kwargs)
             plugin._wrap_sync_client(self_client)
 
         anthropic.Anthropic.__init__ = patched_sync_init  # type: ignore[method-assign]
 
-        original_async_init = anthropic.AsyncAnthropic.__init__
+        self._original_async_init = anthropic.AsyncAnthropic.__init__
 
         def patched_async_init(self_client: Any, *args: Any, **kwargs: Any) -> None:
-            original_async_init(self_client, *args, **kwargs)
+            plugin._original_async_init(self_client, *args, **kwargs)
             plugin._wrap_async_client(self_client)
 
         anthropic.AsyncAnthropic.__init__ = patched_async_init  # type: ignore[method-assign]
 
     def _wrap_sync_client(self, client: Any) -> None:
-        if not hasattr(client, "_transport"):
+        # anthropic SDK v0.116+: transport at client._client._transport
+        target = client
+        if not hasattr(target, "_transport") and hasattr(target, "_client"):
+            target = target._client
+        if not hasattr(target, "_transport"):
             return
-        original = client._transport
+        original = target._transport
         if isinstance(original, RecordingSyncTransport):
             return
-        client._transport = RecordingSyncTransport(
+        target._transport = RecordingSyncTransport(
             wrapped=original,
             on_span=self._enrich_span,
             provider=_PROVIDER,
         )
-        self._patched_clients.append((client, original))
+        self._patched_clients.append((target, original))
 
     def _wrap_async_client(self, client: Any) -> None:
-        if not hasattr(client, "_transport"):
+        # anthropic SDK v0.116+: transport at client._client._transport
+        target = client
+        if not hasattr(target, "_transport") and hasattr(target, "_client"):
+            target = target._client
+        if not hasattr(target, "_transport"):
             return
-        original = client._transport
+        original = target._transport
         if isinstance(original, RecordingAsyncTransport):
             return
-        client._transport = RecordingAsyncTransport(
+        target._transport = RecordingAsyncTransport(
             wrapped=original,
             on_span=self._enrich_span,
             provider=_PROVIDER,
         )
-        self._patched_clients.append((client, original))
+        self._patched_clients.append((target, original))
 
     def _enrich_span(self, span: Span, request: httpx.Request, response: httpx.Response) -> None:
         if _MESSAGES_PATH not in request.url.path:
