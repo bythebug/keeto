@@ -1,4 +1,4 @@
-.PHONY: install lint fmt typecheck test test-unit test-integration benchmark clean
+.PHONY: install lint fmt typecheck test test-unit test-integration benchmark clean docs docs-serve
 
 install:
 	uv pip install -e ".[dev]"
@@ -27,5 +27,11 @@ benchmark:
 coverage:
 	uv run pytest tests/unit/ --cov=src/keeto --cov-report=term-missing
 
+docs:
+	uv run --extra docs mkdocs build
+
+docs-serve:
+	uv run --extra docs mkdocs serve
+
 clean:
-	rm -rf .venv dist build src/keeto.egg-info .pytest_cache .ruff_cache
+	rm -rf .venv dist build src/keeto.egg-info .pytest_cache .ruff_cache site

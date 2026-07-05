@@ -41,6 +41,9 @@ pyrightconfig.json.bak
 # Textual
 .textual/
 
+# MkDocs build output
+site/
+
 # Keeto local data
 keeto.db
 *.keeto.db

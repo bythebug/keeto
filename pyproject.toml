@@ -50,6 +50,10 @@ dev = [
     "syrupy>=4.0",
     "keeto[tui,web,sqlite]",
 ]
+docs = [
+    "mkdocs-material>=9.5",
+    "mkdocstrings[python]>=0.25",
+]
 all = ["keeto[tui,web,sqlite,otel,postgres]"]
 
 [project.scripts]

@@ -1,0 +1,99 @@
+site_name: Keeto
+site_description: Zero-config AI observability for Python
+site_url: https://keeto.dev/docs
+repo_url: https://github.com/keeto-dev/keeto
+repo_name: keeto-dev/keeto
+edit_uri: edit/main/docs/
+
+theme:
+  name: material
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.code.annotate
+  icon:
+    repo: fontawesome/brands/github
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: [src]
+          options:
+            show_source: true
+            show_root_heading: true
+            show_symbol_type_heading: true
+            show_symbol_type_toc: true
+            docstring_style: google
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.tabbed:
+      alternate_style: true
+  - tables
+  - toc:
+      permalink: true
+
+nav:
+  - Home: index.md
+  - Getting Started:
+    - Quickstart: quickstart.md
+    - Installation: installation.md
+    - Configuration: configuration.md
+  - Integrations:
+    - Overview: integrations/index.md
+    - OpenAI: integrations/openai.md
+    - Anthropic: integrations/anthropic.md
+    - LangChain: integrations/langchain.md
+    - LlamaIndex: integrations/llamaindex.md
+    - LiteLLM: integrations/litellm.md
+    - Google Gemini: integrations/gemini.md
+    - Ollama: integrations/ollama.md
+    - OpenAI Agents SDK: integrations/openai-agents.md
+    - PydanticAI: integrations/pydantic-ai.md
+    - FastAPI: integrations/fastapi.md
+    - vLLM: integrations/vllm.md
+  - Dashboard:
+    - TUI: dashboard/tui.md
+    - Web: dashboard/web.md
+  - Exporters: exporters/index.md
+  - Analysis: analysis/index.md
+  - CLI: cli.md
+  - Plugins: plugins/building-plugins.md
+  - API Reference: api-reference/index.md
+  - Performance: performance.md
+  - Security: security.md
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/keeto-dev/keeto
+    - icon: fontawesome/brands/python
+      link: https://pypi.org/project/keeto

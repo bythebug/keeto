@@ -559,7 +559,7 @@ docs/
 - [x] 97. `[CLI]` `keeto config [get|set|list]` — manage `~/.keeto/config.toml`
 - [x] 98. `[CLI]` `keeto doctor` — diagnose setup issues
 - [x] 99. `[CLI]` `keeto compare <id1> <id2>` — side-by-side trace diff
-- [ ] 100. `[DOCS]` v1.0 documentation complete
+- [x] 100. `[DOCS]` v1.0 documentation complete
 
 ---
 
