@@ -89,7 +89,7 @@ with monitor:
 # monitor.stop() called automatically
 ```
 
-## Cost budgets
+## Cost budgets { #budgets }
 
 ```python
 monitor.set_budget(

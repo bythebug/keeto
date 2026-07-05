@@ -1,0 +1,29 @@
+/* Hero tagline */
+.hero-tagline {
+  font-size: 1.2rem;
+  color: var(--md-default-fg-color--light);
+  max-width: 680px;
+  margin: 0.5rem 0 2rem;
+  line-height: 1.6;
+}
+
+/* Tighten up the homepage hero action buttons */
+.hero-actions {
+  margin-bottom: 2rem;
+}
+
+/* Make the homepage grid cards look better */
+.md-typeset .grid.cards > ul > li,
+.md-typeset .grid.cards > ol > li {
+  border-radius: 6px;
+}
+
+/* Code block contrast tweak */
+.md-typeset pre > code {
+  font-size: 0.82rem;
+}
+
+/* Nav tab active indicator */
+.md-tabs__link--active {
+  font-weight: 600;
+}

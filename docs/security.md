@@ -72,6 +72,6 @@ If you configure an exporter that sends data over the network (OTEL, LangSmith, 
 
 ## Reporting vulnerabilities
 
-Report security issues privately via GitHub's [private vulnerability reporting](https://github.com/keeto-dev/keeto/security/advisories/new). Do not open public issues for security vulnerabilities.
+Report security issues privately via GitHub's [private vulnerability reporting](https://github.com/bythebug/keeto/security/advisories/new). Do not open public issues for security vulnerabilities.
 
-See [SECURITY.md](https://github.com/keeto-dev/keeto/blob/main/SECURITY.md) in the repository for the full disclosure policy.
+See [SECURITY.md](https://github.com/bythebug/keeto/blob/main/SECURITY.md) in the repository for the full disclosure policy.

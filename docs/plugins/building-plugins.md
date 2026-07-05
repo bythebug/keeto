@@ -142,4 +142,4 @@ uv build
 uv publish
 ```
 
-Submit a link to the [keeto-dev/keeto](https://github.com/keeto-dev/keeto) Discussions to get listed in the integration table.
+Submit a link to the [bythebug/keeto](https://github.com/bythebug/keeto) Discussions to get listed in the integration table.

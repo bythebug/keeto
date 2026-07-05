@@ -1,8 +1,8 @@
 site_name: Keeto
-site_description: Zero-config AI observability for Python
-site_url: https://keeto.dev/docs
-repo_url: https://github.com/keeto-dev/keeto
-repo_name: keeto-dev/keeto
+site_description: Zero-config AI observability for Python — automatic tracing, cost tracking, and dashboards in two lines.
+site_url: https://bythebug.github.io/keeto
+repo_url: https://github.com/bythebug/keeto
+repo_name: bythebug/keeto
 edit_uri: edit/main/docs/
 
 theme:
@@ -10,29 +10,31 @@ theme:
   palette:
     - media: "(prefers-color-scheme: light)"
       scheme: default
-      primary: indigo
-      accent: indigo
+      primary: deep purple
+      accent: deep purple
       toggle:
         icon: material/brightness-7
         name: Switch to dark mode
     - media: "(prefers-color-scheme: dark)"
       scheme: slate
-      primary: indigo
-      accent: indigo
+      primary: deep purple
+      accent: deep purple
       toggle:
         icon: material/brightness-4
         name: Switch to light mode
   features:
     - navigation.tabs
     - navigation.sections
-    - navigation.expand
     - navigation.top
+    - navigation.instant
     - search.suggest
     - search.highlight
     - content.code.copy
     - content.code.annotate
+    - content.tabs.link
   icon:
     repo: fontawesome/brands/github
+  custom_dir: docs/overrides
 
 plugins:
   - search
@@ -41,7 +43,7 @@ plugins:
         python:
           paths: [src]
           options:
-            show_source: true
+            show_source: false
             show_root_heading: true
             show_symbol_type_heading: true
             show_symbol_type_toc: true
@@ -49,6 +51,8 @@ plugins:
 
 markdown_extensions:
   - admonition
+  - attr_list
+  - md_in_html
   - pymdownx.details
   - pymdownx.superfences
   - pymdownx.highlight:
@@ -57,6 +61,9 @@ markdown_extensions:
   - pymdownx.snippets
   - pymdownx.tabbed:
       alternate_style: true
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
   - tables
   - toc:
       permalink: true
@@ -80,20 +87,23 @@ nav:
     - PydanticAI: integrations/pydantic-ai.md
     - FastAPI: integrations/fastapi.md
     - vLLM: integrations/vllm.md
-  - Dashboard:
-    - TUI: dashboard/tui.md
-    - Web: dashboard/web.md
-  - Exporters: exporters/index.md
-  - Analysis: analysis/index.md
-  - CLI: cli.md
-  - Plugins: plugins/building-plugins.md
+  - Features:
+    - Dashboard: dashboard/tui.md
+    - Web Dashboard: dashboard/web.md
+    - Exporters: exporters/index.md
+    - Analysis: analysis/index.md
+    - Security & PII: security.md
+    - Performance: performance.md
+  - CLI Reference: cli.md
+  - Plugin Development: plugins/building-plugins.md
   - API Reference: api-reference/index.md
-  - Performance: performance.md
-  - Security: security.md
 
 extra:
   social:
     - icon: fontawesome/brands/github
-      link: https://github.com/keeto-dev/keeto
+      link: https://github.com/bythebug/keeto
     - icon: fontawesome/brands/python
       link: https://pypi.org/project/keeto
+
+extra_css:
+  - stylesheets/extra.css

@@ -42,7 +42,7 @@ pip install "keeto[tui,web,sqlite,otel]"
 ## Development install
 
 ```bash
-git clone https://github.com/keeto-dev/keeto
+git clone https://github.com/bythebug/keeto
 cd keeto
 uv sync --extra dev
 ```
