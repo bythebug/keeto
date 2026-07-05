@@ -473,7 +473,7 @@ docs/
 - [x] 23. `[DASHBOARD]` TUI: Trace list widget (scrollable, sortable)
 - [x] 24. `[DASHBOARD]` TUI: Trace detail side panel
 - [x] 25. `[DASHBOARD]` TUI: Timeline visualization (ASCII waterfall)
-- [ ] 26. `[DASHBOARD]` TUI: Cost summary panel (today, session, per-model breakdown)
+- [x] 26. `[DASHBOARD]` TUI: Cost summary panel (today, session, per-model breakdown)
 - [ ] 27. `[DASHBOARD]` TUI: Performance panel (latency histogram, P50/P95/P99)
 - [ ] 28. `[DASHBOARD]` TUI: Live refresh via Textual reactive workers
 - [ ] 29. `[DASHBOARD]` TUI: Search and filter traces by model, provider, status

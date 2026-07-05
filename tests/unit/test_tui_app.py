@@ -197,3 +197,34 @@ class TestTimeline:
         trace = _make_trace("t1", latency_ms=750.0)
         result = build_waterfall(trace, bar_cols=40)
         assert "750ms" in result
+
+
+class TestCostView:
+    @pytest.mark.asyncio
+    async def test_cost_view_mounts(self, storage: MemoryStorage) -> None:
+        app = KeetoApp(storage=storage)
+        async with app.run_test(headless=True) as pilot:
+            from keeto.dashboard.tui.widgets.cost import CostView
+            assert app.query_one(CostView) is not None
+
+    @pytest.mark.asyncio
+    async def test_refresh_data_populates_table(self, storage: MemoryStorage) -> None:
+        from keeto.dashboard.tui.widgets.cost import CostView
+        traces = [
+            _make_trace("t1", model="gpt-4o", cost_usd=0.001),
+            _make_trace("t2", model="gpt-4o", cost_usd=0.002),
+            _make_trace("t3", model="claude-3-5-sonnet", provider="anthropic", cost_usd=0.003),
+        ]
+        app = KeetoApp(storage=storage)
+        async with app.run_test(headless=True) as pilot:
+            cv = app.query_one(CostView)
+            cv.refresh_data(traces)
+            await pilot.pause()
+            table = cv.query_one("DataTable")
+            # two distinct models
+            assert table.row_count == 2
+
+    def test_pct_helper(self) -> None:
+        from keeto.dashboard.tui.widgets.cost import _pct
+        assert _pct(1.0, 4.0) == "25.0%"
+        assert _pct(0.0, 0.0) == "—"
