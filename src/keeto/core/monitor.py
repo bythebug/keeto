@@ -85,6 +85,13 @@ class Monitor:
         self._cost_by_model: dict[str, float] = {}
         self._budget_alert_fired: set[str] = set()
 
+        # Token budget tracking (#76)
+        self._token_budget_monthly: int | None = None
+        self._token_budget_daily: int | None = None
+        self._session_tokens: int = 0
+        self._daily_tokens: int = 0
+        self._daily_tokens_date: Any = None  # datetime.date
+
         # Lazy-imported to avoid circular imports
         self._registry: Any = None
 
@@ -194,6 +201,7 @@ class Monitor:
             self._session_cost_usd += span.cost_usd
             self._accumulate_cost(span)
             self._check_budget()
+        self._accumulate_tokens(span)
 
     # ------------------------------------------------------------------
     # Budget management (issue #61)
@@ -246,6 +254,67 @@ class Monitor:
                     f"[yellow]keeto: daily budget exceeded "
                     f"(${self._daily_cost_usd:.4f} >= ${self._budget_daily_usd:.4f})[/yellow]"
                 )
+
+    # ------------------------------------------------------------------
+    # Token budget tracking (issue #76)
+    # ------------------------------------------------------------------
+
+    def set_token_budget(
+        self,
+        monthly: int | None = None,
+        daily: int | None = None,
+    ) -> None:
+        """Set token budget thresholds. Logs a warning when exceeded."""
+        self._token_budget_monthly = monthly
+        self._token_budget_daily = daily
+
+    def _accumulate_tokens(self, span: Span) -> None:
+        from datetime import date
+
+        total = (span.input_tokens or 0) + (span.output_tokens or 0)
+        if total == 0:
+            return
+
+        self._session_tokens += total
+
+        today = date.today()
+        if self._daily_tokens_date != today:
+            self._daily_tokens_date = today
+            self._daily_tokens = 0
+        self._daily_tokens += total
+
+        self._check_token_budget()
+
+    def _check_token_budget(self) -> None:
+        from datetime import date
+
+        if self._token_budget_daily is not None:
+            key = f"token_daily_{date.today()}"
+            if key not in self._budget_alert_fired and self._daily_tokens >= self._token_budget_daily:
+                self._budget_alert_fired.add(key)
+                self._console.print(
+                    f"[yellow]keeto: daily token budget exceeded "
+                    f"({self._daily_tokens:,} >= {self._token_budget_daily:,} tokens)[/yellow]"
+                )
+
+        if self._token_budget_monthly is not None:
+            from datetime import date as _date
+            key = f"token_monthly_{_date.today().year}_{_date.today().month}"
+            if key not in self._budget_alert_fired and self._session_tokens >= self._token_budget_monthly:
+                self._budget_alert_fired.add(key)
+                self._console.print(
+                    f"[yellow]keeto: monthly token budget exceeded "
+                    f"({self._session_tokens:,} >= {self._token_budget_monthly:,} tokens)[/yellow]"
+                )
+
+    def token_summary(self) -> dict[str, Any]:
+        """Return token usage summary for the current session."""
+        return {
+            "session_tokens": self._session_tokens,
+            "today_tokens": self._daily_tokens,
+            "budget_daily": self._token_budget_daily,
+            "budget_monthly": self._token_budget_monthly,
+        }
 
     # ------------------------------------------------------------------
     # Cost aggregation (issue #62)
@@ -362,12 +431,20 @@ class Monitor:
     # ------------------------------------------------------------------
 
     def recommendations(self) -> Any:
-        from keeto.analyzers.recommendations import RecommendationsEngine
+        """Return a RecommendationsReport with rule-based findings."""
         import asyncio
+
+        from keeto.analyzers.recommendations import RecommendationsEngine
 
         traces = asyncio.run(self._storage.list_traces(limit=10_000))
         engine = RecommendationsEngine()
         return engine.analyze(traces)
+
+    def compare(self, trace_a: Trace, trace_b: Trace) -> Any:
+        """Side-by-side comparison of two traces. Returns a TraceComparison."""
+        from keeto.analyzers.comparison import TraceComparison
+
+        return TraceComparison.from_traces(trace_a, trace_b)
 
 
 class _TracesProxy:

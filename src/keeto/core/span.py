@@ -140,3 +140,53 @@ class Trace(BaseModel):
         self.spans.append(span)
         if span.end_time:
             self.end_time = span.end_time
+
+    def replay(self) -> Any:
+        """Re-send the original request captured in this trace.
+
+        Requires that the capturing Monitor had store_prompts=True so that
+        llm.messages (and optionally llm.system_prompt) were recorded on the
+        root span's attributes.
+        """
+        root = self.root_span
+        if root is None:
+            raise ValueError("No root span in trace — cannot replay.")
+
+        messages = root.attributes.get("llm.messages")
+        if not messages:
+            raise ValueError(
+                "No messages stored on this trace. "
+                "Enable store_prompts=True on the Monitor to capture messages for replay."
+            )
+
+        provider = root.provider or ""
+        model = root.model or ""
+        system = root.attributes.get("llm.system_prompt")
+
+        if provider == "openai":
+            import openai  # type: ignore[import-untyped]
+
+            all_messages = list(messages)
+            if system:
+                all_messages = [{"role": "system", "content": system}, *all_messages]
+            client = openai.OpenAI()
+            return client.chat.completions.create(model=model, messages=all_messages)
+
+        if provider == "anthropic":
+            import anthropic  # type: ignore[import-untyped]
+
+            max_tokens = (root.output_tokens or 0) + 256 or 1024
+            kwargs: dict[str, Any] = {
+                "model": model,
+                "messages": list(messages),
+                "max_tokens": max_tokens,
+            }
+            if system:
+                kwargs["system"] = system
+            client = anthropic.Anthropic()
+            return client.messages.create(**kwargs)
+
+        raise NotImplementedError(
+            f"Replay is not supported for provider '{provider}'. "
+            "Supported: 'openai', 'anthropic'."
+        )

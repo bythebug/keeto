@@ -133,6 +133,12 @@ class OpenAIPlugin(Plugin):
 
             messages = req_body.get("messages", [])
             span.set_attribute("llm.message_count", len(messages))
+            store_prompts = getattr(self._monitor, "_store_prompts", True) if self._monitor else True
+            if store_prompts:
+                span.set_attribute("llm.messages", messages)
+                sys_msgs = [m for m in messages if isinstance(m, dict) and m.get("role") == "system"]
+                if sys_msgs:
+                    span.set_attribute("llm.system_prompt", sys_msgs[0].get("content", ""))
 
             # Issue #56: multimodal detection
             has_images = any(

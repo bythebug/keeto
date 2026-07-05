@@ -519,21 +519,21 @@ docs/
 
 ### Milestone 4: Analysis Engine (v0.4) — Issues 66–80
 
-- [ ] 66. `[ANALYSIS]` Recommendations engine core: rule registry + report formatter
-- [ ] 67. `[ANALYSIS]` Rule: prompt size optimization (flag prompts >75% of context window)
-- [ ] 68. `[ANALYSIS]` Rule: cache candidates (identical prompt sent >2x in session)
-- [ ] 69. `[ANALYSIS]` Rule: model switch suggestions (same task cheaper on another model)
-- [ ] 70. `[ANALYSIS]` Rule: context waste (large system prompt repeated per-call)
-- [ ] 71. `[ANALYSIS]` Rule: retry loop detection (>3 retries on same prompt)
-- [ ] 72. `[ANALYSIS]` Rule: hallucination heuristics (repetition patterns, entropy)
-- [ ] 73. `[ANALYSIS]` Cost anomaly detection (>2σ from session mean)
-- [ ] 74. `[ANALYSIS]` Latency anomaly detection and slow-prompt log
-- [ ] 75. `[ANALYSIS]` Error pattern clustering (group similar errors)
-- [ ] 76. `[ANALYSIS]` Token budget tracking: `monitor.set_token_budget(monthly=1_000_000)`
-- [ ] 77. `[ANALYSIS]` Conversation growth visualization in dashboard
-- [ ] 78. `[ANALYSIS]` Prompt replay: `trace.replay()` — re-sends exact request
-- [ ] 79. `[ANALYSIS]` Trace comparison: `monitor.compare(trace_a, trace_b)`
-- [ ] 80. `[ANALYSIS]` `monitor.recommendations()` — structured report object + pretty print
+- [x] 66. `[ANALYSIS]` Recommendations engine core: rule registry + report formatter
+- [x] 67. `[ANALYSIS]` Rule: prompt size optimization (flag prompts >75% of context window)
+- [x] 68. `[ANALYSIS]` Rule: cache candidates (identical prompt sent >2x in session)
+- [x] 69. `[ANALYSIS]` Rule: model switch suggestions (same task cheaper on another model)
+- [x] 70. `[ANALYSIS]` Rule: context waste (large system prompt repeated per-call)
+- [x] 71. `[ANALYSIS]` Rule: retry loop detection (>3 retries on same prompt)
+- [x] 72. `[ANALYSIS]` Rule: hallucination heuristics (repetition patterns, entropy)
+- [x] 73. `[ANALYSIS]` Cost anomaly detection (>2σ from session mean)
+- [x] 74. `[ANALYSIS]` Latency anomaly detection and slow-prompt log
+- [x] 75. `[ANALYSIS]` Error pattern clustering (group similar errors)
+- [x] 76. `[ANALYSIS]` Token budget tracking: `monitor.set_token_budget(monthly=1_000_000)`
+- [x] 77. `[ANALYSIS]` Conversation growth visualization in dashboard
+- [x] 78. `[ANALYSIS]` Prompt replay: `trace.replay()` — re-sends exact request
+- [x] 79. `[ANALYSIS]` Trace comparison: `monitor.compare(trace_a, trace_b)`
+- [x] 80. `[ANALYSIS]` `monitor.recommendations()` — structured report object + pretty print
 
 ### Milestone 5: Export & Ecosystem (v0.5) — Issues 81–90
 

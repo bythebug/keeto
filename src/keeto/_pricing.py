@@ -57,6 +57,53 @@ PRICES: dict[str, dict[str, dict[str, float]]] = {
 }
 
 
+# Context window sizes in tokens, used by the recommendations engine (#67)
+CONTEXT_WINDOWS: dict[str, int] = {
+    # OpenAI
+    "gpt-4o": 128_000,
+    "gpt-4o-mini": 128_000,
+    "gpt-4.1": 1_047_576,
+    "gpt-4.1-mini": 1_047_576,
+    "gpt-4.1-nano": 1_047_576,
+    "o1": 200_000,
+    "o1-mini": 128_000,
+    "o3": 200_000,
+    "o3-mini": 200_000,
+    "o4-mini": 200_000,
+    # Anthropic
+    "claude-opus-4-8": 200_000,
+    "claude-opus-4-5": 200_000,
+    "claude-sonnet-4-6": 200_000,
+    "claude-sonnet-4-5": 200_000,
+    "claude-haiku-4-5": 200_000,
+    "claude-3-5-sonnet-20241022": 200_000,
+    "claude-3-5-haiku-20241022": 200_000,
+    "claude-3-opus-20240229": 200_000,
+    "claude-3-sonnet-20240229": 200_000,
+    "claude-3-haiku-20240307": 200_000,
+    # Google
+    "gemini-2.5-pro": 1_000_000,
+    "gemini-2.5-flash": 1_000_000,
+    "gemini-2.0-flash": 1_000_000,
+    "gemini-1.5-pro": 2_000_000,
+    "gemini-1.5-flash": 1_000_000,
+}
+
+
+def context_window(model: str) -> int | None:
+    """Return the context window size for a model, or None if unknown."""
+    w = CONTEXT_WINDOWS.get(model)
+    if w is not None:
+        return w
+    # Strip date suffix (e.g. gpt-4o-2024-11-20 → gpt-4o)
+    parts = model.split("-")
+    for end in range(len(parts) - 1, 0, -1):
+        candidate = "-".join(parts[:end])
+        if candidate in CONTEXT_WINDOWS:
+            return CONTEXT_WINDOWS[candidate]
+    return None
+
+
 def cost_usd(
     provider: str,
     model: str,

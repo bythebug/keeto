@@ -116,10 +116,15 @@ class AnthropicPlugin(Plugin):
 
             messages = req_body.get("messages", [])
             span.set_attribute("llm.message_count", len(messages))
+            store_prompts = getattr(self._monitor, "_store_prompts", True) if self._monitor else True
+            if store_prompts:
+                span.set_attribute("llm.messages", messages)
 
             system = req_body.get("system")
             if system:
                 span.set_attribute("llm.has_system_prompt", True)
+                if store_prompts:
+                    span.set_attribute("llm.system_prompt", system if isinstance(system, str) else str(system))
 
             # Issue #56: multimodal detection
             has_images = any(

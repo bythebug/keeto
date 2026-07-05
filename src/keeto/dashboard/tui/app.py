@@ -23,6 +23,7 @@ from textual.binding import Binding
 from textual.reactive import reactive
 from textual.widgets import Footer, Header, TabbedContent, TabPane
 
+from keeto.dashboard.tui.widgets.analysis import AnalysisView
 from keeto.dashboard.tui.widgets.cost import CostView
 from keeto.dashboard.tui.widgets.errors import ErrorsView
 from keeto.dashboard.tui.widgets.performance import PerformanceView
@@ -157,6 +158,8 @@ class KeetoApp(App[None]):
                 yield PerformanceView(storage=self._storage)
             with TabPane("Errors", id="errors"):
                 yield ErrorsView(storage=self._storage)
+            with TabPane("Analysis", id="analysis"):
+                yield AnalysisView()
         yield Footer()
 
     # ------------------------------------------------------------------
@@ -190,6 +193,10 @@ class KeetoApp(App[None]):
             pass
         try:
             self.query_one(PerformanceView).refresh_data(traces)
+        except Exception:
+            pass
+        try:
+            self.query_one(AnalysisView).refresh_data(traces)
         except Exception:
             pass
 
