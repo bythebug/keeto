@@ -138,13 +138,30 @@ class SQLiteStorage:
                     trace.add_span(_row_to_span(span_row))
             return trace
 
-    async def list_traces(self, limit: int = 50, offset: int = 0) -> list[Trace]:
+    async def list_traces(
+        self,
+        limit: int = 50,
+        offset: int = 0,
+        since: datetime | None = None,
+        until: datetime | None = None,
+    ) -> list[Trace]:
         async with self._lock:
             conn = await self._get_conn()
-            async with conn.execute(
-                "SELECT trace_id, start_time, end_time FROM traces ORDER BY start_time DESC LIMIT ? OFFSET ?",
-                (limit, offset),
-            ) as cur:
+            conditions: list[str] = []
+            params: list[object] = []
+            if since is not None:
+                conditions.append("start_time >= ?")
+                params.append(since.isoformat())
+            if until is not None:
+                conditions.append("start_time <= ?")
+                params.append(until.isoformat())
+            where = f"WHERE {' AND '.join(conditions)}" if conditions else ""
+            params += [limit, offset]
+            query = (
+                f"SELECT trace_id, start_time, end_time FROM traces "
+                f"{where} ORDER BY start_time DESC LIMIT ? OFFSET ?"
+            )
+            async with conn.execute(query, params) as cur:
                 trace_rows = await cur.fetchall()
 
             traces: list[Trace] = []

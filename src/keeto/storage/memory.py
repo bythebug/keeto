@@ -37,11 +37,23 @@ class MemoryStorage:
         async with self._lock:
             return self._traces.get(trace_id)
 
-    async def list_traces(self, limit: int = 50, offset: int = 0) -> list[Trace]:
+    async def list_traces(
+        self,
+        limit: int = 50,
+        offset: int = 0,
+        since: datetime | None = None,
+        until: datetime | None = None,
+    ) -> list[Trace]:
         async with self._lock:
             ids = list(reversed(self._order))
-            page = ids[offset : offset + limit]
-            return [self._traces[tid] for tid in page if tid in self._traces]
+            filtered = [
+                self._traces[tid]
+                for tid in ids
+                if tid in self._traces
+                and (since is None or self._traces[tid].start_time >= since)
+                and (until is None or self._traces[tid].start_time <= until)
+            ]
+            return filtered[offset : offset + limit]
 
     async def purge(self, older_than: datetime) -> int:
         async with self._lock:

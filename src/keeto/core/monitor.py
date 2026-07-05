@@ -74,6 +74,7 @@ class Monitor:
         self._auto = auto
         self._started = False
         self._console = Console(stderr=True)
+        self._webhook: Any = None  # WebhookNotifier | None
 
         # Budget and cost tracking (issues #61, #62)
         self._budget_daily_usd: float | None = None
@@ -202,6 +203,8 @@ class Monitor:
             self._accumulate_cost(span)
             self._check_budget()
         self._accumulate_tokens(span)
+        if self._webhook and span.status == SpanStatus.ERROR:
+            self._webhook.notify_error(span)
 
     # ------------------------------------------------------------------
     # Budget management (issue #61)
@@ -245,6 +248,10 @@ class Monitor:
                     f"[yellow]keeto: session budget exceeded "
                     f"(${self._session_cost_usd:.4f} >= ${self._budget_session_usd:.4f})[/yellow]"
                 )
+                if self._webhook:
+                    self._webhook.notify_budget(
+                        "session", self._session_cost_usd, self._budget_session_usd
+                    )
 
         if self._budget_daily_usd is not None:
             key = f"daily_{date.today()}"
@@ -254,6 +261,10 @@ class Monitor:
                     f"[yellow]keeto: daily budget exceeded "
                     f"(${self._daily_cost_usd:.4f} >= ${self._budget_daily_usd:.4f})[/yellow]"
                 )
+                if self._webhook:
+                    self._webhook.notify_budget(
+                        "daily", self._daily_cost_usd, self._budget_daily_usd
+                    )
 
     # ------------------------------------------------------------------
     # Token budget tracking (issue #76)
@@ -393,22 +404,83 @@ class Monitor:
         start_web_dashboard(self._storage, block=False)
 
     # ------------------------------------------------------------------
+    # Webhook (issue #86)
+    # ------------------------------------------------------------------
+
+    def set_webhook(
+        self,
+        url: str,
+        *,
+        on_error: bool = True,
+        on_budget: bool = True,
+        secret: str | None = None,
+        timeout: float = 5.0,
+    ) -> None:
+        """Configure a webhook URL for error and budget notifications.
+
+        :param url: HTTP endpoint to POST to.
+        :param on_error: Fire when an error span is emitted.
+        :param on_budget: Fire when a cost/token budget is exceeded.
+        :param secret: Optional HMAC-SHA256 signing key for ``X-Keeto-Signature`` header.
+        :param timeout: Request timeout in seconds (default 5 s).
+        """
+        from keeto.exporters.webhook import WebhookNotifier
+
+        self._webhook: WebhookNotifier | None = WebhookNotifier(
+            url,
+            on_error=on_error,
+            on_budget=on_budget,
+            secret=secret,
+            timeout=timeout,
+        )
+
+    # ------------------------------------------------------------------
     # Export
     # ------------------------------------------------------------------
 
     def export(
-        self, path: str | None = None, format: str | None = None, **kwargs: Any
+        self,
+        path: str | None = None,
+        format: str | None = None,
+        since: Any | None = None,
+        until: Any | None = None,
+        **kwargs: Any,
     ) -> None:
-        """
-        Export captured traces.
+        """Export captured traces.
 
-        monitor.export("traces.json")         # inferred from extension
-        monitor.export("traces.csv")
-        monitor.export(format="otel", endpoint="http://jaeger:4317")
+        :param path: Output file path (format inferred from extension).
+        :param format: Explicit format: ``"json"``, ``"csv"``, ``"otel"``,
+            ``"langsmith"``, or ``"mlflow"``.
+        :param since: Only export traces with start_time >= this value
+            (``datetime`` or ISO-8601 string).
+        :param until: Only export traces with start_time <= this value.
+
+        Examples::
+
+            monitor.export("traces.json")
+            monitor.export("traces.csv")
+            monitor.export(format="otel", endpoint="http://jaeger:4317")
+            monitor.export(format="langsmith", project_name="my-project")
+            monitor.export(format="mlflow", experiment_name="my-exp")
+            monitor.export("traces.json", since="2024-01-01", until="2024-01-31")
         """
         import asyncio
+        from datetime import datetime, timezone
 
-        traces = asyncio.run(self._storage.list_traces(limit=10_000))
+        def _parse_dt(v: Any) -> datetime | None:
+            if v is None:
+                return None
+            if isinstance(v, datetime):
+                return v if v.tzinfo else v.replace(tzinfo=timezone.utc)
+            dt = datetime.fromisoformat(str(v))
+            return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
+
+        since_dt = _parse_dt(since)
+        until_dt = _parse_dt(until)
+
+        traces = asyncio.run(
+            self._storage.list_traces(limit=10_000, since=since_dt, until=until_dt)
+        )
 
         if format is None and path:
             ext = path.rsplit(".", 1)[-1].lower()
@@ -423,8 +495,17 @@ class Monitor:
         elif format == "otel":
             from keeto.exporters.otel import export_otel
             export_otel(traces, **kwargs)
+        elif format == "langsmith":
+            from keeto.exporters.langsmith import export_langsmith
+            export_langsmith(traces, path=path, **kwargs)
+        elif format == "mlflow":
+            from keeto.exporters.mlflow import export_mlflow
+            export_mlflow(traces, **kwargs)
         else:
-            raise ValueError(f"Unknown export format: {format!r}. Use 'json', 'csv', or 'otel'.")
+            raise ValueError(
+                f"Unknown export format: {format!r}. "
+                "Use 'json', 'csv', 'otel', 'langsmith', or 'mlflow'."
+            )
 
     # ------------------------------------------------------------------
     # Analysis
@@ -445,6 +526,37 @@ class Monitor:
         from keeto.analyzers.comparison import TraceComparison
 
         return TraceComparison.from_traces(trace_a, trace_b)
+
+    # ------------------------------------------------------------------
+    # LangSmith import (issue #89)
+    # ------------------------------------------------------------------
+
+    def import_langsmith(
+        self,
+        project_name: str,
+        limit: int = 100,
+        api_key: str | None = None,
+        api_url: str | None = None,
+    ) -> int:
+        """Import runs from a LangSmith project into the current storage.
+
+        Returns the number of traces imported.  Requires the ``langsmith``
+        package and a valid ``LANGCHAIN_API_KEY`` env var (or pass *api_key*).
+
+        Example::
+
+            count = monitor.import_langsmith("my-project", limit=50)
+            monitor.compare(monitor.traces[0], monitor.traces[1])
+        """
+        import asyncio
+
+        from keeto.exporters.langsmith import import_from_langsmith
+
+        traces = import_from_langsmith(project_name, limit=limit, api_key=api_key, api_url=api_url)
+        for trace in traces:
+            for span in trace.spans:
+                asyncio.run(self._storage.append(span))
+        return len(traces)
 
 
 class _TracesProxy:

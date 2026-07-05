@@ -537,16 +537,16 @@ docs/
 
 ### Milestone 5: Export & Ecosystem (v0.5) — Issues 81–90
 
-- [ ] 81. `[EXPORT]` OpenTelemetry OTLP exporter (`keeto[otel]` extra)
-- [ ] 82. `[EXPORT]` Jaeger export (via OTLP)
-- [ ] 83. `[EXPORT]` LangSmith compatibility adapter
-- [ ] 84. `[EXPORT]` MLflow compatibility adapter
-- [ ] 85. `[EXPORT]` Prometheus `/metrics` endpoint
-- [ ] 86. `[EXPORT]` Webhook notifications on error or cost threshold
-- [ ] 87. `[STORAGE]` PostgreSQL storage backend with asyncpg (`keeto[postgres]` extra)
-- [ ] 88. `[EXPORT]` Bulk historical export with date range filter
-- [ ] 89. `[EXPORT]` Import traces from LangSmith for comparison
-- [ ] 90. `[INFRA]` Benchmark CI: enforce <5% overhead on each PR
+- [x] 81. `[EXPORT]` OpenTelemetry OTLP exporter (`keeto[otel]` extra)
+- [x] 82. `[EXPORT]` Jaeger export (via OTLP)
+- [x] 83. `[EXPORT]` LangSmith compatibility adapter
+- [x] 84. `[EXPORT]` MLflow compatibility adapter
+- [x] 85. `[EXPORT]` Prometheus `/metrics` endpoint
+- [x] 86. `[EXPORT]` Webhook notifications on error or cost threshold
+- [x] 87. `[STORAGE]` PostgreSQL storage backend with asyncpg (`keeto[postgres]` extra)
+- [x] 88. `[EXPORT]` Bulk historical export with date range filter
+- [x] 89. `[EXPORT]` Import traces from LangSmith for comparison
+- [x] 90. `[INFRA]` Benchmark CI: enforce <5% overhead on each PR
 
 ### Milestone 6: CLI & Polish (v1.0) — Issues 91–100
 

@@ -34,7 +34,11 @@ dependencies = [
 tui = ["textual>=0.70"]
 web = ["fastapi>=0.110", "uvicorn[standard]>=0.29"]
 sqlite = ["aiosqlite>=0.19"]
-otel = ["opentelemetry-sdk>=1.24", "opentelemetry-exporter-otlp-proto-grpc>=1.24"]
+otel = [
+    "opentelemetry-sdk>=1.24",
+    "opentelemetry-exporter-otlp-proto-grpc>=1.24",
+    "opentelemetry-exporter-otlp-proto-http>=1.24",
+]
 postgres = ["asyncpg>=0.29"]
 dev = [
     "pytest>=8.0",
@@ -45,7 +49,7 @@ dev = [
     "syrupy>=4.0",
     "keeto[tui,web,sqlite]",
 ]
-all = ["keeto[tui,web,sqlite,otel]"]
+all = ["keeto[tui,web,sqlite,otel,postgres]"]
 
 [project.scripts]
 keeto = "keeto.cli.main:app"

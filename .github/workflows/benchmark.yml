@@ -1,0 +1,63 @@
+name: Benchmark
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  benchmark:
+    name: Performance regression check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install uv
+        run: pip install uv
+
+      - name: Install dependencies
+        run: uv pip install -e ".[dev]" --system
+
+      - name: Run benchmarks
+        run: |
+          pytest tests/benchmarks/ \
+            -v \
+            --benchmark-min-rounds=20 \
+            --benchmark-json=benchmark_result.json \
+            -p no:randomly
+
+      - name: Upload benchmark results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: benchmark-results-${{ github.sha }}
+          path: benchmark_result.json
+          retention-days: 90
+
+      - name: Check overhead threshold
+        run: |
+          python - <<'EOF'
+          import json, sys
+          with open("benchmark_result.json") as f:
+              data = json.load(f)
+          benchmarks = data.get("benchmarks", [])
+          failed = []
+          for b in benchmarks:
+              name = b["name"]
+              mean_ms = b["stats"]["mean"] * 1000
+              # emit_overhead: 100 spans, mean should be < 100 ms total
+              if "emit_overhead" in name and mean_ms > 100:
+                  failed.append(f"{name}: {mean_ms:.2f} ms (limit 100 ms for 100 spans)")
+          if failed:
+              print("BENCHMARK FAILURES:")
+              for f in failed:
+                  print(f"  {f}")
+              sys.exit(1)
+          print(f"All {len(benchmarks)} benchmark(s) passed.")
+          EOF

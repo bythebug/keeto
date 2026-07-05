@@ -35,7 +35,13 @@ class StorageBackend(Protocol):
 
     async def get_trace(self, trace_id: str) -> Trace | None: ...
 
-    async def list_traces(self, limit: int = 50, offset: int = 0) -> list[Trace]: ...
+    async def list_traces(
+        self,
+        limit: int = 50,
+        offset: int = 0,
+        since: datetime | None = None,
+        until: datetime | None = None,
+    ) -> list[Trace]: ...
 
     async def purge(self, older_than: datetime) -> int: ...
 

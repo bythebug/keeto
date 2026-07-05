@@ -514,6 +514,15 @@ def create_app(storage: "StorageBackend") -> FastAPI:
         traces = await storage.list_traces(limit=200)
         return HTMLResponse(_recommendations_html(traces))
 
+    @app.get("/metrics")
+    async def prometheus_metrics() -> HTMLResponse:
+        """Prometheus text-format metrics endpoint (issue #85)."""
+        from keeto.exporters.prometheus import generate_prometheus_text
+
+        traces = await storage.list_traces(limit=10_000)
+        text = generate_prometheus_text(traces)
+        return HTMLResponse(content=text, media_type="text/plain; version=0.0.4; charset=utf-8")
+
     @app.get("/api/stream")
     async def api_stream() -> StreamingResponse:
         async def generator() -> AsyncGenerator[str, None]:
