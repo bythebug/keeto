@@ -470,7 +470,7 @@ docs/
 
 - [x] 21. `[DASHBOARD]` `monitor.dashboard(mode="rich")` — Rich table summary (no extra deps)
 - [x] 22. `[DASHBOARD]` TUI: Textual app skeleton with tab bar + layout
-- [ ] 23. `[DASHBOARD]` TUI: Trace list widget (scrollable, sortable)
+- [x] 23. `[DASHBOARD]` TUI: Trace list widget (scrollable, sortable)
 - [ ] 24. `[DASHBOARD]` TUI: Trace detail side panel
 - [ ] 25. `[DASHBOARD]` TUI: Timeline visualization (ASCII waterfall)
 - [ ] 26. `[DASHBOARD]` TUI: Cost summary panel (today, session, per-model breakdown)

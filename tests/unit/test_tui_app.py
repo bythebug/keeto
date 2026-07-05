@@ -1,19 +1,51 @@
-"""Smoke tests for the TUI app skeleton."""
+"""Tests for the TUI app skeleton and trace list widget."""
 
 from __future__ import annotations
 
+import asyncio
+import time
+from datetime import timedelta
+
 import pytest
+from keeto.core.span import Span, SpanStatus, Trace
 from keeto.dashboard.tui.app import KeetoApp
 from keeto.dashboard.tui.widgets.cost import CostView
 from keeto.dashboard.tui.widgets.errors import ErrorsView
 from keeto.dashboard.tui.widgets.performance import PerformanceView
-from keeto.dashboard.tui.widgets.traces import TracesView
+from keeto.dashboard.tui.widgets.traces import TraceListWidget, TracesView, _age, _fmt_cost, _fmt_lat, _fmt_tokens
 from keeto.storage.memory import MemoryStorage
 
 
 @pytest.fixture
 def storage() -> MemoryStorage:
     return MemoryStorage()
+
+
+def _make_trace(
+    trace_id: str = "abc123",
+    provider: str = "openai",
+    model: str = "gpt-4o",
+    latency_ms: float = 500.0,
+    input_tokens: int = 200,
+    output_tokens: int = 80,
+    cost_usd: float = 0.0012,
+    error: bool = False,
+) -> Trace:
+    trace = Trace(trace_id=trace_id)
+    span = Span(
+        trace_id=trace_id,
+        span_id="s1",
+        name=f"{provider}.chat",
+        provider=provider,
+        model=model,
+        input_tokens=input_tokens,
+        output_tokens=output_tokens,
+        cost_usd=cost_usd,
+    )
+    span.end_time = span.start_time + timedelta(milliseconds=latency_ms)
+    span.finish(status=SpanStatus.ERROR if error else SpanStatus.OK)
+    trace.add_span(span)
+    return trace
 
 
 class TestKeetoApp:
@@ -34,7 +66,6 @@ class TestKeetoApp:
 
     @pytest.mark.asyncio
     async def test_compose_runs(self, storage: MemoryStorage) -> None:
-        """App composes without raising (headless pilot)."""
         app = KeetoApp(storage=storage)
         async with app.run_test(headless=True) as pilot:
             assert app.query_one(TracesView) is not None
@@ -47,4 +78,83 @@ class TestKeetoApp:
         app = KeetoApp(storage=storage)
         async with app.run_test(headless=True) as pilot:
             await pilot.press("q")
-            # App should exit cleanly after q
+
+
+class TestTraceListWidget:
+    @pytest.mark.asyncio
+    async def test_columns_rendered(self, storage: MemoryStorage) -> None:
+        app = KeetoApp(storage=storage)
+        async with app.run_test(headless=True) as pilot:
+            widget = app.query_one(TraceListWidget)
+            table = widget.query_one("DataTable")
+            assert len(table.columns) == len(TraceListWidget._COLUMNS)
+
+    @pytest.mark.asyncio
+    async def test_update_adds_rows(self, storage: MemoryStorage) -> None:
+        app = KeetoApp(storage=storage)
+        traces = [_make_trace(f"t{i}") for i in range(5)]
+        async with app.run_test(headless=True) as pilot:
+            widget = app.query_one(TraceListWidget)
+            widget.update(traces)
+            await pilot.pause()
+            assert widget.query_one("DataTable").row_count == 5
+
+    @pytest.mark.asyncio
+    async def test_update_removes_stale_rows(self, storage: MemoryStorage) -> None:
+        app = KeetoApp(storage=storage)
+        async with app.run_test(headless=True) as pilot:
+            widget = app.query_one(TraceListWidget)
+            widget.update([_make_trace("t1"), _make_trace("t2")])
+            await pilot.pause()
+            widget.update([_make_trace("t1")])  # t2 removed
+            await pilot.pause()
+            assert widget.query_one("DataTable").row_count == 1
+
+    @pytest.mark.asyncio
+    async def test_refresh_preserves_cursor(self, storage: MemoryStorage) -> None:
+        app = KeetoApp(storage=storage)
+        traces = [_make_trace(f"t{i}") for i in range(3)]
+        async with app.run_test(headless=True) as pilot:
+            widget = app.query_one(TraceListWidget)
+            widget.update(traces)
+            await pilot.pause()
+            table = widget.query_one("DataTable")
+            table.move_cursor(row=1)
+            row_before = table.cursor_row
+            # Refresh with same traces
+            widget.update(traces)
+            await pilot.pause()
+            assert table.cursor_row == row_before
+
+
+class TestFormatHelpers:
+    def test_fmt_lat_ms(self) -> None:
+        assert _fmt_lat(450.0) == "450ms"
+
+    def test_fmt_lat_seconds(self) -> None:
+        assert _fmt_lat(1500.0) == "1.50s"
+
+    def test_fmt_lat_none(self) -> None:
+        assert _fmt_lat(None) == "—"
+
+    def test_fmt_tokens_thousands(self) -> None:
+        assert _fmt_tokens(2500) == "2.5k"
+
+    def test_fmt_tokens_zero(self) -> None:
+        assert _fmt_tokens(0) == "—"
+
+    def test_fmt_cost_zero(self) -> None:
+        assert _fmt_cost(0.0) == "—"
+
+    def test_fmt_cost_normal(self) -> None:
+        assert _fmt_cost(0.0032) == "$0.0032"
+
+    def test_age_seconds(self) -> None:
+        from datetime import datetime, timezone
+        dt = datetime.now(timezone.utc) - timedelta(seconds=30)
+        assert "s ago" in _age(dt)
+
+    def test_age_minutes(self) -> None:
+        from datetime import datetime, timezone
+        dt = datetime.now(timezone.utc) - timedelta(minutes=5)
+        assert "m ago" in _age(dt)
