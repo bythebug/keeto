@@ -108,6 +108,10 @@ class Monitor:
     # ------------------------------------------------------------------
 
     def start(self) -> None:
+        import os
+
+        if os.environ.get("KEETO_DISABLED"):
+            return
         if self._started:
             return
         self._pipeline.start()
