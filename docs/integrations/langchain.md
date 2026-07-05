@@ -53,11 +53,15 @@ result = executor.invoke({"input": "Who won the 2024 Olympics?"})
 
 ## Manual callback
 
-If you need to attach the callback explicitly:
+If you need to attach the plugin explicitly instead of relying on auto-detection:
 
 ```python
-from keeto.integrations.langchain import KeetoCallbackHandler
+from keeto import Monitor
+from keeto.integrations.langchain import LangchainPlugin
 
-handler = KeetoCallbackHandler(monitor)
-llm = ChatOpenAI(callbacks=[handler])
+monitor = Monitor(auto=False, plugins=[LangchainPlugin()])
+monitor.start()
+
+from langchain_openai import ChatOpenAI
+llm = ChatOpenAI(model="gpt-4o-mini")
 ```

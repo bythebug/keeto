@@ -37,11 +37,14 @@ chat_engine = index.as_chat_engine()
 response = chat_engine.chat("Tell me more about the setting.")
 ```
 
-## Manual handler
+## Manual setup
+
+If you need to attach the plugin explicitly instead of relying on auto-detection:
 
 ```python
-from keeto.integrations.llamaindex import KeetoEventHandler
-from llama_index.core import Settings
+from keeto import Monitor
+from keeto.integrations.llamaindex import LlamaindexPlugin
 
-Settings.callback_manager.add_handler(KeetoEventHandler(monitor))
+monitor = Monitor(auto=False, plugins=[LlamaindexPlugin()])
+monitor.start()
 ```

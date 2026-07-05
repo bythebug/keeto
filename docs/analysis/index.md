@@ -118,19 +118,21 @@ keeto compare abc123de def456ab --db keeto.db
 ## Token budget tracking
 
 ```python
-monitor.set_token_budget(monthly=1_000_000, on_exceed="warn")
+monitor.set_token_budget(monthly=1_000_000, daily=500_000)
 
 summary = monitor.token_summary()
 print(summary)
-# {"total_input": 450000, "total_output": 92000, "budget_monthly": 1000000, ...}
+# {"session_tokens": 542000, "today_tokens": 542000,
+#  "budget_daily": 500000, "budget_monthly": 1000000}
 ```
 
 ## Cost budget
 
 ```python
-monitor.set_budget(daily_usd=10.0, on_exceed="warn")
+monitor.set_budget(daily_usd=10.0, session_usd=2.0)
 
 summary = monitor.cost_summary()
 print(summary)
-# {"session_usd": 0.42, "today_usd": 3.18, "budget_daily_usd": 10.0, ...}
+# {"session_usd": 0.42, "today_usd": 3.18,
+#  "by_provider": {"openai": 3.18}, "by_model": {"gpt-4o": 3.18}}
 ```

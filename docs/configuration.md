@@ -46,7 +46,7 @@ monitor.start()
 ```python
 from keeto.storage.memory import MemoryStorage
 
-monitor = Monitor(storage=MemoryStorage(max_size=500))
+monitor = Monitor(storage=MemoryStorage(max_traces=500))
 ```
 
 - Zero dependencies

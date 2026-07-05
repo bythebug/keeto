@@ -11,8 +11,8 @@ pip install "keeto[tui]"
 ## Launch
 
 ```python
-monitor.dashboard()          # default: TUI
 monitor.dashboard(mode="tui")
+monitor.dashboard()          # default: Rich table summary (no extra deps)
 ```
 
 Or from the CLI (reads from a SQLite database):

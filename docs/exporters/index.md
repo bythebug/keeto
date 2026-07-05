@@ -96,12 +96,13 @@ Metrics exposed:
 ```python
 monitor.set_webhook(
     url="https://hooks.slack.com/services/...",
-    on_error=True,
-    on_cost_threshold=5.0,  # USD
+    on_error=True,   # fire on error spans
+    on_budget=True,  # fire when cost or token budget is exceeded
+    secret="my-hmac-secret",  # optional: adds X-Keeto-Signature header
 )
 ```
 
-Sends a JSON POST to the webhook URL when an error occurs or the daily cost threshold is exceeded.
+Sends a JSON POST to the webhook URL when an error occurs or a cost/token budget is exceeded.
 
 ## Date range filtering
 

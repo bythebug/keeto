@@ -24,13 +24,12 @@ class MyFrameworkPlugin(Plugin):
 
     def _intercept(self, client_self, *args, **kwargs):
         from keeto.core.span import Span, SpanKind, SpanStatus
-        from keeto.core.context import current_trace_id, current_span_id
-        import uuid
+        from keeto.core.context import get_current_trace_id, new_trace_id, new_span_id
         from datetime import datetime, timezone
 
         span = Span(
-            trace_id=current_trace_id.get() or str(uuid.uuid4()),
-            span_id=str(uuid.uuid4()),
+            trace_id=get_current_trace_id() or new_trace_id(),
+            span_id=new_span_id(),
             name="myframework.call",
             kind=SpanKind.LLM,
             start_time=datetime.now(timezone.utc),
@@ -49,33 +48,33 @@ class MyFrameworkPlugin(Plugin):
 
 ## Using the httpx transport
 
-Most AI SDKs use httpx. Inherit from the shared base transport wrapper:
+Most AI SDKs use httpx. Wrap the SDK client's transport with `RecordingSyncTransport` or `RecordingAsyncTransport`:
 
 ```python
-from keeto.integrations._httpx import KeetoTransport
+from keeto.integrations._httpx import RecordingSyncTransport
 
 class MyPlugin(Plugin):
     name = "myprovider"
-    version = "0.1.0"
 
     def install(self, monitor) -> None:
         import myprovider_sdk
         self._monitor = monitor
         client = myprovider_sdk.get_http_client()
-        client._transport = KeetoTransport(
-            wrapped=client._transport,
-            monitor=monitor,
+        original = client._transport
+        client._transport = RecordingSyncTransport(
+            wrapped=original,
+            on_span=self._enrich,
             provider="myprovider",
-            enrich=self._enrich,
         )
 
-    def _enrich(self, span, request, response_bytes) -> None:
-        """Parse response bytes and populate span fields."""
+    def _enrich(self, span, request, response) -> None:
+        """Enrich the span from the response and emit it."""
         import json
-        data = json.loads(response_bytes)
+        data = json.loads(response.content)
         span.model = data.get("model")
         span.input_tokens = data.get("usage", {}).get("input_tokens")
         span.output_tokens = data.get("usage", {}).get("output_tokens")
+        self._monitor.emit(span)
 ```
 
 ## Entry point registration

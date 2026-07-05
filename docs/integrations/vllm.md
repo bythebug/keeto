@@ -23,7 +23,6 @@ client = openai.OpenAI(
 - Model name (as reported by vLLM)
 - Input/output token counts
 - Latency (including inference time)
-- Streaming chunks
 
 ## Basic usage
 
@@ -36,6 +35,8 @@ print(response.choices[0].message.content)
 ```
 
 ## Streaming
+
+Streaming responses are passed through unmodified. **Limitation:** token counts are `None` for streaming calls (same behaviour as the OpenAI plugin — see [OpenAI streaming docs](openai.md#streaming)).
 
 ```python
 stream = client.chat.completions.create(
