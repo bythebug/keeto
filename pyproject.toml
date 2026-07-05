@@ -7,9 +7,9 @@ name = "keeto"
 version = "0.1.0"
 description = "Zero-config AI observability and debugging for Python"
 readme = "README.md"
-license = { text = "MIT" }
+license = { file = "LICENSE" }
 requires-python = ">=3.11"
-authors = [{ name = "Keeto Contributors" }]
+authors = [{ name = "Suraj Van Verma", email = "surajvanv@gmail.com" }]
 keywords = ["ai", "observability", "tracing", "llm", "openai", "anthropic", "debugging"]
 classifiers = [
     "Development Status :: 3 - Alpha",
@@ -74,11 +74,10 @@ openai_agents = "keeto.integrations.openai_agents:OpenAIAgentsPlugin"
 pydantic_ai = "keeto.integrations.pydantic_ai:PydanticAIPlugin"
 
 [project.urls]
-Homepage = "https://github.com/keeto-dev/keeto"
-Documentation = "https://keeto.dev/docs"
-Repository = "https://github.com/keeto-dev/keeto"
-Issues = "https://github.com/keeto-dev/keeto/issues"
-Changelog = "https://github.com/keeto-dev/keeto/blob/main/CHANGELOG.md"
+Homepage = "https://github.com/bythebug/keeto"
+Repository = "https://github.com/bythebug/keeto"
+Issues = "https://github.com/bythebug/keeto/issues"
+Changelog = "https://github.com/bythebug/keeto/blob/main/CHANGELOG.md"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/keeto"]
