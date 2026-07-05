@@ -12,7 +12,8 @@ from keeto.dashboard.tui.app import KeetoApp
 from keeto.dashboard.tui.widgets.cost import CostView
 from keeto.dashboard.tui.widgets.errors import ErrorsView
 from keeto.dashboard.tui.widgets.performance import PerformanceView
-from keeto.dashboard.tui.widgets.traces import TraceListWidget, TracesView, _age, _fmt_cost, _fmt_lat, _fmt_tokens
+from keeto.dashboard.tui.widgets._utils import _age, _fmt_cost, _fmt_lat, _fmt_tokens
+from keeto.dashboard.tui.widgets.traces import TraceListWidget, TracesView
 from keeto.storage.memory import MemoryStorage
 
 

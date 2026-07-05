@@ -2,62 +2,25 @@
 TracesView — left/right split for the Traces tab.
 
 #23  TraceListWidget — scrollable, sortable DataTable
-#24  TraceDetailWidget — detail panel (placeholder until #24)
-#25  Timeline visualization inside detail panel
+#24  TraceDetailWidget — full detail panel wired here
+#25  Timeline waterfall inside detail panel
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime, timezone
 from typing import TYPE_CHECKING, ClassVar
 
 from textual.app import ComposeResult
-from textual.coordinate import Coordinate
 from textual.message import Message
-from textual.reactive import reactive
 from textual.widget import Widget
-from textual.widgets import DataTable, Label, Static
+from textual.widgets import DataTable, Static
+
+from keeto.dashboard.tui.widgets._utils import _age, _fmt_cost, _fmt_lat, _fmt_tokens
 
 if TYPE_CHECKING:
     from keeto.core.span import Trace
     from keeto.storage.base import StorageBackend
-
-
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
-
-def _fmt_lat(ms: float | None) -> str:
-    if ms is None:
-        return "—"
-    return f"{ms / 1000:.2f}s" if ms >= 1000 else f"{ms:.0f}ms"
-
-
-def _fmt_tokens(n: int) -> str:
-    if n == 0:
-        return "—"
-    if n >= 1_000_000:
-        return f"{n / 1_000_000:.1f}M"
-    if n >= 1_000:
-        return f"{n / 1_000:.1f}k"
-    return str(n)
-
-
-def _fmt_cost(usd: float) -> str:
-    if usd == 0:
-        return "—"
-    return f"${usd:.4f}" if usd >= 0.0001 else f"${usd:.6f}"
-
-
-def _age(dt: datetime) -> str:
-    delta = datetime.now(timezone.utc) - dt
-    s = int(delta.total_seconds())
-    if s < 60:
-        return f"{s}s ago"
-    if s < 3600:
-        return f"{s // 60}m ago"
-    return f"{s // 3600}h ago"
 
 
 # ---------------------------------------------------------------------------
@@ -110,7 +73,7 @@ class TraceListWidget(Widget):
 
     def on_mount(self) -> None:
         table = self.query_one(DataTable)
-        for label, key, width, justify in self._COLUMNS:
+        for label, key, width, _ in self._COLUMNS:
             table.add_column(label, key=key, width=width)
 
     def on_data_table_row_highlighted(self, event: DataTable.RowHighlighted) -> None:
@@ -207,47 +170,31 @@ class TracesView(Widget):
     }
     #detail-pane {
         width: 3fr;
-        padding: 0 1;
         overflow-y: auto;
-    }
-    #detail-placeholder {
-        align: center middle;
-        height: 1fr;
-        color: $text-muted;
     }
     """
 
-    def __init__(self, storage: StorageBackend) -> None:
+    def __init__(self, storage: "StorageBackend") -> None:
         super().__init__()
         self._storage = storage
 
     def compose(self) -> ComposeResult:
+        # Import here to break the potential circular-import at module load time;
+        # detail.py imports from _utils, NOT from this file.
+        from keeto.dashboard.tui.widgets.detail import TraceDetailWidget  # noqa: PLC0415
+
         with Static(id="list-pane"):
             yield TraceListWidget()
         with Static(id="detail-pane"):
-            yield Label(
-                "Select a trace to see details",
-                id="detail-placeholder",
-            )
+            yield TraceDetailWidget()
 
     def on_trace_list_widget_trace_selected(
         self, event: TraceListWidget.TraceSelected
     ) -> None:
-        """Forward to detail panel — TraceDetailWidget wired in issue #24."""
-        detail = self.query_one("#detail-pane")
-        detail.remove_children()
-        # Temporary summary until #24 builds TraceDetailWidget
-        lines = [
-            f"[bold]Trace[/bold]  {event.trace.trace_id}",
-            f"Provider  {event.trace.provider or '—'}",
-            f"Model     {event.trace.model or '—'}",
-            f"Latency   {_fmt_lat(event.trace.latency_ms)}",
-            f"Cost      {_fmt_cost(event.trace.total_cost_usd)}",
-            f"Spans     {len(event.trace.spans)}",
-            f"Status    {'[red]error[/red]' if event.trace.has_error else '[green]ok[/green]'}",
-        ]
-        detail.mount(Label("\n".join(lines), markup=True))
+        from keeto.dashboard.tui.widgets.detail import TraceDetailWidget  # noqa: PLC0415
 
-    def refresh_data(self, traces: list[Trace]) -> None:
+        self.query_one(TraceDetailWidget).show(event.trace)
+
+    def refresh_data(self, traces: list["Trace"]) -> None:
         """Called every 2s by KeetoApp poll loop."""
         self.query_one(TraceListWidget).update(traces)
