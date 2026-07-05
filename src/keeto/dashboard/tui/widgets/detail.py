@@ -7,12 +7,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, ClassVar
 
-from rich.text import Text
 from textual.app import ComposeResult
-from textual.containers import ScrollableContainer, VerticalScroll
 from textual.reactive import reactive
 from textual.widget import Widget
-from textual.widgets import Label, Rule, Static
+from textual.widgets import Label, Static
 
 from keeto.dashboard.tui.widgets._utils import _fmt_cost, _fmt_lat, _fmt_tokens
 
@@ -179,16 +177,16 @@ class TraceDetailWidget(Widget):
         header.mount(Label("  ".join(meta_parts), markup=True))
 
         # ------------------------------------------------------------------
-        # 2. Timeline hook (issue #25 will replace this placeholder)
+        # 2. Timeline waterfall (#25)
         # ------------------------------------------------------------------
+        from keeto.dashboard.tui.widgets.timeline import TimelineWidget  # noqa: PLC0415
+
         body.mount(_SectionHeader("TIMELINE"))
-        body.mount(
-            Label(
-                "[dim]── waterfall coming in issue #25 ──[/dim]",
-                markup=True,
-                classes="timeline-placeholder",
-            )
-        )
+        tl = TimelineWidget()
+        body.mount(tl)
+        # Setting the reactive *after* mount triggers watch_trace once the
+        # widget is fully composed.
+        self.call_after_refresh(tl.show, trace)
 
         # ------------------------------------------------------------------
         # 3. Spans

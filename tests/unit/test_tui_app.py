@@ -43,8 +43,8 @@ def _make_trace(
         output_tokens=output_tokens,
         cost_usd=cost_usd,
     )
-    span.end_time = span.start_time + timedelta(milliseconds=latency_ms)
     span.finish(status=SpanStatus.ERROR if error else SpanStatus.OK)
+    span.end_time = span.start_time + timedelta(milliseconds=latency_ms)
     trace.add_span(span)
     return trace
 
@@ -159,3 +159,41 @@ class TestFormatHelpers:
         from datetime import datetime, timezone
         dt = datetime.now(timezone.utc) - timedelta(minutes=5)
         assert "m ago" in _age(dt)
+
+
+class TestTimeline:
+    def test_single_span_produces_one_line(self) -> None:
+        from keeto.dashboard.tui.widgets.timeline import build_waterfall
+        trace = _make_trace("t1", latency_ms=500.0)
+        lines = build_waterfall(trace, bar_cols=40).splitlines()
+        assert len(lines) == 1
+
+    def test_bar_contains_block_char(self) -> None:
+        from keeto.dashboard.tui.widgets.timeline import build_waterfall, _BAR_CHAR
+        trace = _make_trace("t1", latency_ms=500.0)
+        result = build_waterfall(trace, bar_cols=40)
+        assert _BAR_CHAR in result
+
+    def test_no_spans_returns_placeholder(self) -> None:
+        from keeto.dashboard.tui.widgets.timeline import build_waterfall
+        trace = Trace(trace_id="empty")
+        result = build_waterfall(trace)
+        assert "no spans" in result
+
+    def test_multiple_spans_multiple_lines(self) -> None:
+        from datetime import timedelta
+        from keeto.dashboard.tui.widgets.timeline import build_waterfall
+        from keeto.core.span import Span, SpanStatus
+        trace = Trace(trace_id="multi")
+        for i in range(3):
+            sp = Span(trace_id="multi", span_id=f"s{i}", name=f"span{i}")
+            sp.finish()
+            trace.add_span(sp)
+        result = build_waterfall(trace, bar_cols=40)
+        assert len(result.splitlines()) == 3
+
+    def test_latency_shown_in_output(self) -> None:
+        from keeto.dashboard.tui.widgets.timeline import build_waterfall
+        trace = _make_trace("t1", latency_ms=750.0)
+        result = build_waterfall(trace, bar_cols=40)
+        assert "750ms" in result
