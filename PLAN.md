@@ -474,20 +474,20 @@ docs/
 - [x] 24. `[DASHBOARD]` TUI: Trace detail side panel
 - [x] 25. `[DASHBOARD]` TUI: Timeline visualization (ASCII waterfall)
 - [x] 26. `[DASHBOARD]` TUI: Cost summary panel (today, session, per-model breakdown)
-- [ ] 27. `[DASHBOARD]` TUI: Performance panel (latency histogram, P50/P95/P99)
-- [ ] 28. `[DASHBOARD]` TUI: Live refresh via Textual reactive workers
-- [ ] 29. `[DASHBOARD]` TUI: Search and filter traces by model, provider, status
-- [ ] 30. `[DASHBOARD]` TUI: Vim-style keyboard navigation (j/k, /, q)
-- [ ] 31. `[DASHBOARD]` Web: FastAPI + SSE server skeleton (`keeto[web]` extra)
-- [ ] 32. `[DASHBOARD]` Web: Trace list page (HTMX, no JS build)
-- [ ] 33. `[DASHBOARD]` Web: Trace detail page with timeline
-- [ ] 34. `[DASHBOARD]` Web: Real-time updates via Server-Sent Events
-- [ ] 35. `[DASHBOARD]` Web: Cost over time chart (Chart.js CDN)
-- [ ] 36. `[DASHBOARD]` Web: Error analysis panel
-- [ ] 37. `[DASHBOARD]` Web: Recommendations panel
-- [ ] 38. `[DASHBOARD]` Web: Auto-open browser on `monitor.dashboard(mode="web")`
-- [ ] 39. `[DASHBOARD]` Dark mode support (TUI + web)
-- [ ] 40. `[EXPORT]` CSV exporter
+- [x] 27. `[DASHBOARD]` TUI: Performance panel (latency histogram, P50/P95/P99)
+- [x] 28. `[DASHBOARD]` TUI: Live refresh via Textual reactive workers
+- [x] 29. `[DASHBOARD]` TUI: Search and filter traces by model, provider, status
+- [x] 30. `[DASHBOARD]` TUI: Vim-style keyboard navigation (j/k, /, q)
+- [x] 31. `[DASHBOARD]` Web: FastAPI + SSE server skeleton (`keeto[web]` extra)
+- [x] 32. `[DASHBOARD]` Web: Trace list page (HTMX, no JS build)
+- [x] 33. `[DASHBOARD]` Web: Trace detail page with timeline
+- [x] 34. `[DASHBOARD]` Web: Real-time updates via Server-Sent Events
+- [x] 35. `[DASHBOARD]` Web: Cost over time chart (Chart.js CDN)
+- [x] 36. `[DASHBOARD]` Web: Error analysis panel
+- [x] 37. `[DASHBOARD]` Web: Recommendations panel
+- [x] 38. `[DASHBOARD]` Web: Auto-open browser on `monitor.dashboard(mode="web")`
+- [x] 39. `[DASHBOARD]` Dark mode support (TUI + web)
+- [x] 40. `[EXPORT]` CSV exporter
 
 ### Milestone 3: Integrations (v0.3) — Issues 41–65
 

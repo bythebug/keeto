@@ -236,7 +236,7 @@ class Monitor:
                 "[red]Web dashboard requires fastapi. Install with: pip install keeto[web][/red]"
             )
             return
-        start_web_dashboard(self._storage)
+        start_web_dashboard(self._storage, block=False)
 
     # ------------------------------------------------------------------
     # Export

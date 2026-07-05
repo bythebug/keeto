@@ -60,6 +60,19 @@ class TestKeetoApp:
         assert "q" in keys
         assert "r" in keys
         assert "/" in keys
+        assert "d" in keys  # dark/light toggle (#39)
+
+    @pytest.mark.asyncio
+    async def test_toggle_dark_flips_theme(self, storage: MemoryStorage) -> None:
+        app = KeetoApp(storage=storage)
+        async with app.run_test(headless=True) as pilot:
+            before = app.theme
+            app.action_toggle_dark()
+            await pilot.pause()
+            assert app.theme != before
+            app.action_toggle_dark()
+            await pilot.pause()
+            assert app.theme == before
 
     def test_refresh_interval_positive(self) -> None:
         from keeto.dashboard.tui.app import _REFRESH_INTERVAL
@@ -197,6 +210,247 @@ class TestTimeline:
         trace = _make_trace("t1", latency_ms=750.0)
         result = build_waterfall(trace, bar_cols=40)
         assert "750ms" in result
+
+
+class TestPerformanceView:
+    @pytest.mark.asyncio
+    async def test_mounts(self, storage: MemoryStorage) -> None:
+        app = KeetoApp(storage=storage)
+        async with app.run_test(headless=True) as pilot:
+            assert app.query_one(PerformanceView) is not None
+
+    @pytest.mark.asyncio
+    async def test_refresh_data_populates_table(self, storage: MemoryStorage) -> None:
+        traces = [
+            _make_trace("t1", model="gpt-4o",      provider="openai",    latency_ms=300),
+            _make_trace("t2", model="gpt-4o",      provider="openai",    latency_ms=600),
+            _make_trace("t3", model="claude-3-5",  provider="anthropic", latency_ms=800),
+        ]
+        app = KeetoApp(storage=storage)
+        async with app.run_test(headless=True) as pilot:
+            pv = app.query_one(PerformanceView)
+            pv.refresh_data(traces)
+            await pilot.pause()
+            from textual.widgets import DataTable
+            table = pv.query_one(DataTable)
+            assert table.row_count == 2  # two distinct models
+
+
+class TestPercentileHelper:
+    def test_empty(self) -> None:
+        from keeto.dashboard.tui.widgets.performance import _percentile
+        assert _percentile([], 50) is None
+
+    def test_single(self) -> None:
+        from keeto.dashboard.tui.widgets.performance import _percentile
+        assert _percentile([100.0], 50) == 100.0
+
+    def test_p50(self) -> None:
+        from keeto.dashboard.tui.widgets.performance import _percentile
+        vals = [100.0, 200.0, 300.0, 400.0, 500.0]
+        assert _percentile(vals, 50) == pytest.approx(300.0)
+
+    def test_p95(self) -> None:
+        from keeto.dashboard.tui.widgets.performance import _percentile
+        vals = list(range(1, 101, 1))
+        result = _percentile([float(v) for v in vals], 95)
+        assert result is not None
+        assert 94.0 <= result <= 96.0
+
+
+class TestHistogram:
+    def test_no_data_placeholder(self) -> None:
+        from keeto.dashboard.tui.widgets.performance import _build_histogram
+        assert _build_histogram([]) == "(no data)"
+
+    def test_buckets_present(self) -> None:
+        from keeto.dashboard.tui.widgets.performance import _build_histogram, _BUCKETS
+        result = _build_histogram([50.0, 200.0, 700.0])
+        # All bucket labels should be present (some with 0 count bars)
+        assert "<100ms" in result
+        assert "100-250ms" in result
+
+    def test_bar_char_present(self) -> None:
+        from keeto.dashboard.tui.widgets.performance import _build_histogram, _HIST_BAR
+        result = _build_histogram([100.0, 100.0, 500.0])
+        assert _HIST_BAR in result
+
+
+class TestSearchFilter:
+    @pytest.mark.asyncio
+    async def test_filter_by_model(self, storage: MemoryStorage) -> None:
+        from keeto.dashboard.tui.widgets.traces import TracesView
+        traces = [
+            _make_trace("t1", model="gpt-4o"),
+            _make_trace("t2", model="claude-3-5"),
+        ]
+        app = KeetoApp(storage=storage)
+        async with app.run_test(headless=True) as pilot:
+            tv = app.query_one(TracesView)
+            tv.refresh_data(traces)
+            await pilot.pause()
+            tv._filter = "claude"
+            tv._apply_filter()
+            await pilot.pause()
+            assert tv.query_one(TraceListWidget).query_one("DataTable").row_count == 1
+
+    @pytest.mark.asyncio
+    async def test_filter_by_provider(self, storage: MemoryStorage) -> None:
+        from keeto.dashboard.tui.widgets.traces import TracesView
+        traces = [
+            _make_trace("t1", provider="openai"),
+            _make_trace("t2", provider="anthropic"),
+            _make_trace("t3", provider="anthropic"),
+        ]
+        app = KeetoApp(storage=storage)
+        async with app.run_test(headless=True) as pilot:
+            tv = app.query_one(TracesView)
+            tv.refresh_data(traces)
+            await pilot.pause()
+            tv._filter = "anthropic"
+            tv._apply_filter()
+            await pilot.pause()
+            assert tv.query_one(TraceListWidget).query_one("DataTable").row_count == 2
+
+    @pytest.mark.asyncio
+    async def test_filter_error_keyword(self, storage: MemoryStorage) -> None:
+        from keeto.dashboard.tui.widgets.traces import TracesView
+        traces = [
+            _make_trace("t1", error=False),
+            _make_trace("t2", error=True),
+        ]
+        app = KeetoApp(storage=storage)
+        async with app.run_test(headless=True) as pilot:
+            tv = app.query_one(TracesView)
+            tv.refresh_data(traces)
+            await pilot.pause()
+            tv._filter = "error"
+            tv._apply_filter()
+            await pilot.pause()
+            assert tv.query_one(TraceListWidget).query_one("DataTable").row_count == 1
+
+    @pytest.mark.asyncio
+    async def test_empty_filter_shows_all(self, storage: MemoryStorage) -> None:
+        from keeto.dashboard.tui.widgets.traces import TracesView
+        traces = [_make_trace(f"t{i}") for i in range(5)]
+        app = KeetoApp(storage=storage)
+        async with app.run_test(headless=True) as pilot:
+            tv = app.query_one(TracesView)
+            tv.refresh_data(traces)
+            await pilot.pause()
+            tv._filter = ""
+            tv._apply_filter()
+            await pilot.pause()
+            assert tv.query_one(TraceListWidget).query_one("DataTable").row_count == 5
+
+
+class TestVimNavigation:
+    @pytest.mark.asyncio
+    async def test_j_moves_cursor_down(self, storage: MemoryStorage) -> None:
+        app = KeetoApp(storage=storage)
+        traces = [_make_trace(f"t{i}") for i in range(5)]
+        async with app.run_test(headless=True) as pilot:
+            widget = app.query_one(TraceListWidget)
+            widget.update(traces)
+            await pilot.pause()
+            table = widget.query_one("DataTable")
+            table.move_cursor(row=0)
+            widget.action_cursor_down()
+            await pilot.pause()
+            assert table.cursor_row == 1
+
+    @pytest.mark.asyncio
+    async def test_k_moves_cursor_up(self, storage: MemoryStorage) -> None:
+        app = KeetoApp(storage=storage)
+        traces = [_make_trace(f"t{i}") for i in range(5)]
+        async with app.run_test(headless=True) as pilot:
+            widget = app.query_one(TraceListWidget)
+            widget.update(traces)
+            await pilot.pause()
+            table = widget.query_one("DataTable")
+            table.move_cursor(row=2)
+            widget.action_cursor_up()
+            await pilot.pause()
+            assert table.cursor_row == 1
+
+    @pytest.mark.asyncio
+    async def test_g_jumps_to_top(self, storage: MemoryStorage) -> None:
+        app = KeetoApp(storage=storage)
+        traces = [_make_trace(f"t{i}") for i in range(5)]
+        async with app.run_test(headless=True) as pilot:
+            widget = app.query_one(TraceListWidget)
+            widget.update(traces)
+            await pilot.pause()
+            table = widget.query_one("DataTable")
+            table.move_cursor(row=4)
+            widget.action_cursor_top()
+            await pilot.pause()
+            assert table.cursor_row == 0
+
+    @pytest.mark.asyncio
+    async def test_G_jumps_to_bottom(self, storage: MemoryStorage) -> None:
+        app = KeetoApp(storage=storage)
+        traces = [_make_trace(f"t{i}") for i in range(5)]
+        async with app.run_test(headless=True) as pilot:
+            widget = app.query_one(TraceListWidget)
+            widget.update(traces)
+            await pilot.pause()
+            table = widget.query_one("DataTable")
+            table.move_cursor(row=0)
+            widget.action_cursor_bottom()
+            await pilot.pause()
+            assert table.cursor_row == 4
+
+    @pytest.mark.asyncio
+    async def test_j_clamps_at_bottom(self, storage: MemoryStorage) -> None:
+        app = KeetoApp(storage=storage)
+        traces = [_make_trace(f"t{i}") for i in range(3)]
+        async with app.run_test(headless=True) as pilot:
+            widget = app.query_one(TraceListWidget)
+            widget.update(traces)
+            await pilot.pause()
+            table = widget.query_one("DataTable")
+            table.move_cursor(row=2)  # last row
+            widget.action_cursor_down()  # should not go past end
+            await pilot.pause()
+            assert table.cursor_row == 2
+
+    @pytest.mark.asyncio
+    async def test_k_clamps_at_top(self, storage: MemoryStorage) -> None:
+        app = KeetoApp(storage=storage)
+        traces = [_make_trace(f"t{i}") for i in range(3)]
+        async with app.run_test(headless=True) as pilot:
+            widget = app.query_one(TraceListWidget)
+            widget.update(traces)
+            await pilot.pause()
+            table = widget.query_one("DataTable")
+            table.move_cursor(row=0)
+            widget.action_cursor_up()  # should not go below 0
+            await pilot.pause()
+            assert table.cursor_row == 0
+
+
+class TestLiveRefresh:
+    @pytest.mark.asyncio
+    async def test_broadcast_updates_all_views(self, storage: MemoryStorage) -> None:
+        """_broadcast_traces should reach TracesView, CostView, and PerformanceView."""
+        traces = [
+            _make_trace("t1", model="gpt-4o", cost_usd=0.001, latency_ms=300),
+            _make_trace("t2", model="claude-3-5", provider="anthropic",
+                        cost_usd=0.002, latency_ms=600),
+        ]
+        app = KeetoApp(storage=storage)
+        async with app.run_test(headless=True) as pilot:
+            app._broadcast_traces(traces)
+            await pilot.pause()
+            # All three views should now show 2 distinct models
+            from textual.widgets import DataTable
+            cost_table = app.query_one(CostView).query_one(DataTable)
+            perf_table = app.query_one(PerformanceView).query_one(DataTable)
+            trace_table = app.query_one(TraceListWidget).query_one(DataTable)
+            assert cost_table.row_count == 2
+            assert perf_table.row_count == 2
+            assert trace_table.row_count == 2
 
 
 class TestCostView:

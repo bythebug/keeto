@@ -20,9 +20,8 @@ from typing import TYPE_CHECKING, ClassVar
 
 from textual.app import App, ComposeResult
 from textual.binding import Binding
-from textual.containers import Container
 from textual.reactive import reactive
-from textual.widgets import Footer, Header, Label, Static, TabbedContent, TabPane
+from textual.widgets import Footer, Header, TabbedContent, TabPane
 
 from keeto.dashboard.tui.widgets.cost import CostView
 from keeto.dashboard.tui.widgets.errors import ErrorsView
@@ -30,6 +29,7 @@ from keeto.dashboard.tui.widgets.performance import PerformanceView
 from keeto.dashboard.tui.widgets.traces import TracesView
 
 if TYPE_CHECKING:
+    from keeto.core.span import Trace
     from keeto.storage.base import StorageBackend
 
 _REFRESH_INTERVAL = 2.0  # seconds between live data polls
@@ -127,19 +127,18 @@ class KeetoApp(App[None]):
     """
 
     BINDINGS: ClassVar[list[Binding]] = [
-        Binding("q", "quit", "Quit", show=True),
-        Binding("r", "refresh", "Refresh", show=True),
-        Binding("/", "focus_search", "Search", show=True),
-        Binding("tab", "focus_next", "Next tab", show=False),
-        Binding("shift+tab", "focus_previous", "Prev tab", show=False),
-        Binding("j", "scroll_down", "Down", show=False),
-        Binding("k", "scroll_up", "Up", show=False),
+        Binding("q",         "quit",           "Quit",       show=True),
+        Binding("r",         "refresh",        "Refresh",    show=True),
+        Binding("/",         "focus_search",   "Search",     show=True),
+        Binding("d",         "toggle_dark",    "Dark/Light", show=True),
+        Binding("tab",       "focus_next",     "Next tab",   show=False),
+        Binding("shift+tab", "focus_previous", "Prev tab",   show=False),
     ]
 
-    # Reactive trace count shown in the live indicator
+    # Reactive trace count shown in the sub-title
     trace_count: reactive[int] = reactive(0)
 
-    def __init__(self, storage: StorageBackend) -> None:
+    def __init__(self, storage: "StorageBackend") -> None:
         super().__init__()
         self._storage = storage
 
@@ -165,28 +164,50 @@ class KeetoApp(App[None]):
     # ------------------------------------------------------------------
 
     def on_mount(self) -> None:
-        self.set_interval(_REFRESH_INTERVAL, self._poll_storage)
+        self.set_interval(_REFRESH_INTERVAL, self._schedule_poll)
+
+    def _schedule_poll(self) -> None:
+        """Spawn a background worker each tick so storage I/O never blocks the loop."""
+        self.run_worker(self._poll_storage(), exclusive=True, name="poll_storage")
 
     async def _poll_storage(self) -> None:
         traces = await self._storage.list_traces(limit=1000)
         self.trace_count = len(traces)
-        self.sub_title = f"Live ● {self.trace_count} trace{'s' if self.trace_count != 1 else ''}"
-        # Notify views to refresh
-        self.query_one(TracesView).refresh_data(traces)
+        self.sub_title = (
+            f"Live ● {self.trace_count} trace{'s' if self.trace_count != 1 else ''}"
+        )
+        self._broadcast_traces(traces)
+
+    def _broadcast_traces(self, traces: list["Trace"]) -> None:
+        """Push fresh trace list to every view that knows how to consume it."""
+        try:
+            self.query_one(TracesView).refresh_data(traces)
+        except Exception:
+            pass
+        try:
+            self.query_one(CostView).refresh_data(traces)
+        except Exception:
+            pass
+        try:
+            self.query_one(PerformanceView).refresh_data(traces)
+        except Exception:
+            pass
 
     # ------------------------------------------------------------------
     # Actions
     # ------------------------------------------------------------------
 
     def action_refresh(self) -> None:
-        self.run_worker(self._poll_storage())
+        self._schedule_poll()
 
     def action_focus_search(self) -> None:
-        # Will wire to TracesView search box in issue #29
-        pass
+        """/ key — focus the search bar in the Traces tab."""
+        try:
+            self.query_one(TracesView).focus_search()
+        except Exception:
+            pass
 
-    def action_scroll_down(self) -> None:
-        self.screen.scroll_down()
-
-    def action_scroll_up(self) -> None:
-        self.screen.scroll_up()
+    def action_toggle_dark(self) -> None:
+        """d key — toggle between dark and light theme (delegates to Textual built-in)."""
+        # Textual ≥0.70 uses theme names; the built-in action handles the toggle
+        super().action_toggle_dark()

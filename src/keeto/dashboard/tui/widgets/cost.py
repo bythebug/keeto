@@ -17,7 +17,6 @@ from datetime import datetime, timezone
 from typing import TYPE_CHECKING, ClassVar
 
 from textual.app import ComposeResult
-from textual.reactive import reactive
 from textual.widget import Widget
 from textual.widgets import DataTable, Label, Static
 
