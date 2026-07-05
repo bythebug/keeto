@@ -30,7 +30,9 @@ No changes to your OpenAI client or call sites.
 
 ## Streaming
 
-Streaming responses are fully supported. Keeto buffers chunks and records the aggregated token counts when the stream ends.
+Streaming responses (`stream=True`) are passed through to your application unmodified. Keeto detects the `text/event-stream` content type and does **not** buffer the response, so your application still receives tokens progressively.
+
+**Limitation:** because the response body is not buffered, Keeto cannot extract token counts or cost from streaming calls. The span is still recorded with model, latency, and status — but `input_tokens`, `output_tokens`, and `cost_usd` will be `None`.
 
 ```python
 stream = client.chat.completions.create(
@@ -40,8 +42,10 @@ stream = client.chat.completions.create(
 )
 for chunk in stream:
     print(chunk.choices[0].delta.content or "", end="")
-# Span is recorded when the stream is exhausted
+# Span is recorded: model + latency captured, tokens/cost = None
 ```
+
+If you need cost tracking for streaming calls, use the `usage` field in the final chunk (OpenAI sends it when `stream_options={"include_usage": True}`) and record it via a manual span attribute.
 
 ## Tool calls
 

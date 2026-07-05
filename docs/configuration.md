@@ -34,8 +34,9 @@ monitor.start()
 | `storage` | `MemoryStorage(max_size=1000)` | Where traces are stored |
 | `plugins` | `None` (auto-detect) | Explicit plugin list; disables auto-detection |
 | `auto` | `True` | Auto-detect and load plugins for installed SDKs |
-| `sample_rate` | `1.0` | Fraction of requests to capture (0.0–1.0) |
-| `scrub_pii` | `False` | Redact emails, phone numbers, SSNs from prompt text |
+| `sample_rate` | `1.0` | Fraction of requests to capture (0.0–1.0); errors always captured |
+| `scrub_pii` | `False` | Redact emails, phone numbers, SSNs, credit cards from span attributes |
+| `pii_patterns` | `None` | Additional regex patterns to redact (requires `scrub_pii=True`) |
 | `store_prompts` | `True` | Store prompt/response content (set False to store metadata only) |
 
 ## Storage backends
@@ -94,16 +95,17 @@ with monitor:
 monitor.set_budget(
     daily_usd=10.0,
     session_usd=2.0,
-    on_exceed="warn",   # or "stop" to halt new calls
 )
 ```
+
+Prints a warning to stderr when a threshold is crossed. Each threshold fires at most once per session (daily thresholds reset at midnight).
 
 ## Token budgets
 
 ```python
 monitor.set_token_budget(
     monthly=1_000_000,
-    on_exceed="warn",
+    daily=500_000,
 )
 ```
 
@@ -115,7 +117,7 @@ For high-traffic services, capture a fraction of requests:
 monitor = Monitor(sample_rate=0.1)  # capture 10%
 ```
 
-Errors are always captured regardless of sample rate.
+Error spans are always captured regardless of `sample_rate` so you never lose failure signals.
 
 ## PII scrubbing
 
@@ -123,12 +125,21 @@ Errors are always captured regardless of sample rate.
 monitor = Monitor(scrub_pii=True)
 ```
 
-Scrubs the following patterns from prompt and response text before storage:
+Redacts the following patterns from all span attributes (prompt text, messages, system prompts) before storage:
 
-- Email addresses
-- Phone numbers (US/international)
-- Social Security Numbers
-- Credit card numbers
+- Email addresses → `[EMAIL]`
+- Phone numbers (US/international) → `[PHONE]`
+- Social Security Numbers → `[SSN]`
+- Credit card numbers (16-digit) → `[CARD]`
+
+Add custom patterns for internal identifiers:
+
+```python
+monitor = Monitor(
+    scrub_pii=True,
+    pii_patterns=[r"\bACCT-\d{8}\b"],  # → [REDACTED]
+)
+```
 
 ## Disabling auto-detection
 

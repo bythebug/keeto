@@ -65,14 +65,18 @@ class Monitor:
         plugins: list[Any] | None = None,
         sample_rate: float = 1.0,
         scrub_pii: bool = False,
+        pii_patterns: list[str] | None = None,
         store_prompts: bool = True,
         auto: bool = True,
     ) -> None:
+        import re
+
         self._storage = storage if storage is not None else MemoryStorage()
         self._pipeline = Pipeline(self._storage)
         self._explicit_plugins: list[Any] = plugins if plugins is not None else []
         self._sample_rate = sample_rate
         self._scrub_pii = scrub_pii
+        self._pii_extra: list[re.Pattern[str]] = [re.compile(p) for p in (pii_patterns or [])]
         self._store_prompts = store_prompts
         self._auto = auto
         self._started = False
@@ -198,6 +202,14 @@ class Monitor:
         """Emit a completed span directly (called by plugin interceptors)."""
         if not self._started:
             return
+        # Sampling: errors are always captured regardless of sample_rate.
+        if self._sample_rate < 1.0 and span.status != SpanStatus.ERROR:
+            import random
+            if random.random() > self._sample_rate:
+                return
+        if self._scrub_pii:
+            from keeto.core._pii import scrub_span
+            scrub_span(span, self._pii_extra)
         self._pipeline.emit(span)
         if span.cost_usd is not None:
             self._session_cost_usd += span.cost_usd

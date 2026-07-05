@@ -149,7 +149,7 @@ def scenario_quickstart() -> None:
 def scenario_openai_rag() -> None:
     print("\n━━━ Scenario 2: OpenAI RAG — chat + tool calls + manual spans ━━━")
     try:
-        import openai  # noqa: F401
+        import openai
     except ImportError:
         print("  ⚠  openai not installed — skipping")
         return
@@ -263,7 +263,8 @@ def scenario_openai_rag() -> None:
     turn1 = llm_traces[-1]  # oldest = first call
     span1 = turn1.root_span
     check("Turn 1: tool calls captured", span1 is not None and span1.attributes.get("llm.tool_calls_count") == 1)
-    check("Turn 1: finish_reason=tool_calls", span1 is not None and span1.attributes.get("llm.finish_reason") == "tool_calls")
+    finish_ok = span1 is not None and span1.attributes.get("llm.finish_reason") == "tool_calls"
+    check("Turn 1: finish_reason=tool_calls", finish_ok)
     check("Turn 1: tool name is vector_search",
           span1 is not None and (span1.attributes.get("llm.tool_calls") or [{}])[0].get("name") == "vector_search")
 
@@ -295,7 +296,7 @@ def scenario_openai_rag() -> None:
 def scenario_anthropic_pii() -> None:
     print("\n━━━ Scenario 3: Anthropic summarisation + PII scrubbing ━━━")
     try:
-        import anthropic  # noqa: F401
+        import anthropic as _anthropic_mod
     except ImportError:
         print("  ⚠  anthropic not installed — skipping")
         return
@@ -307,8 +308,6 @@ def scenario_anthropic_pii() -> None:
     from keeto.integrations.anthropic.plugin import AnthropicPlugin
     ant_plugin = AnthropicPlugin()
     ant_plugin.install(monitor)
-
-    import anthropic as _anthropic_mod
 
     with respx.mock:
         respx.post("https://api.anthropic.com/v1/messages").mock(
@@ -349,8 +348,8 @@ def scenario_anthropic_pii() -> None:
 def scenario_multi_provider() -> None:
     print("\n━━━ Scenario 4: Multi-provider session ━━━")
     try:
-        import anthropic  # noqa: F401
-        import openai  # noqa: F401
+        import anthropic as _ant
+        import openai as _oai
     except ImportError:
         print("  ⚠  openai or anthropic not installed — skipping")
         return
@@ -365,9 +364,6 @@ def scenario_multi_provider() -> None:
     ant_p = AnthropicPlugin()
     oai_p.install(monitor)
     ant_p.install(monitor)
-
-    import anthropic as _ant
-    import openai as _oai
 
     with respx.mock:
         respx.post("https://api.openai.com/v1/chat/completions").mock(
@@ -421,7 +417,7 @@ def scenario_multi_provider() -> None:
 def scenario_errors() -> None:
     print("\n━━━ Scenario 5: Rate limits and errors ━━━")
     try:
-        import openai  # noqa: F401
+        import openai as _oai_err
     except ImportError:
         print("  ⚠  openai not installed — skipping")
         return
@@ -433,8 +429,6 @@ def scenario_errors() -> None:
     from keeto.integrations.openai.plugin import OpenAIPlugin
     err_plugin = OpenAIPlugin()
     err_plugin.install(monitor)
-
-    import openai as _oai_err
 
     with respx.mock:
         respx.post("https://api.openai.com/v1/chat/completions").mock(
@@ -616,7 +610,7 @@ def scenario_compare() -> None:
 def scenario_sqlite(tmp_path: Path) -> None:
     print("\n━━━ Scenario 10: SQLite persistent storage ━━━")
     try:
-        from keeto.storage.sqlite import SQLiteStorage  # noqa: F401
+        from keeto.storage.sqlite import SQLiteStorage
     except ImportError:
         print("  ⚠  aiosqlite not installed — skipping")
         return
@@ -686,7 +680,7 @@ def scenario_dashboard() -> None:
 def scenario_litellm() -> None:
     print("\n━━━ Scenario 12: LiteLLM callback ━━━")
     try:
-        import litellm  # noqa: F401
+        import litellm as _litellm  # noqa: F401
     except ImportError:
         print("  ⚠  litellm not installed — skipping")
         return
@@ -801,10 +795,9 @@ def scenario_error_span() -> None:
     monitor = Monitor(storage=storage, auto=False)
     monitor.start()
 
-    with contextlib.suppress(RuntimeError):
-        with monitor.span("failing-llm-call") as ctx:
-            ctx.set_attribute("provider", "openai")
-            raise RuntimeError("Connection timed out after 30s")
+    with contextlib.suppress(RuntimeError), monitor.span("failing-llm-call") as ctx:
+        ctx.set_attribute("provider", "openai")
+        raise RuntimeError("Connection timed out after 30s")
 
     time.sleep(0.2)
 

@@ -28,6 +28,10 @@ client = anthropic.Anthropic()
 
 ## Streaming
 
+Streaming responses are passed through unmodified. Keeto detects the `text/event-stream` content type and does **not** buffer the response body, so tokens are delivered to your application progressively.
+
+**Limitation:** token counts and cost cannot be extracted from streamed responses. The span is recorded with model, latency, and status — but `input_tokens`, `output_tokens`, and `cost_usd` will be `None`.
+
 ```python
 with client.messages.stream(
     model="claude-sonnet-4-6",
@@ -36,7 +40,7 @@ with client.messages.stream(
 ) as stream:
     for text in stream.text_stream:
         print(text, end="", flush=True)
-# Token counts recorded after stream closes
+# Span recorded: model + latency captured, tokens/cost = None
 ```
 
 ## Tool use
