@@ -143,10 +143,11 @@ class TestMonitorSampling:
 class TestMonitorPiiScrubbing:
     def _make_span(self, trace_id: str = "t1"):  # type: ignore[return]
         from keeto.core.span import Span, SpanKind, SpanStatus
+
         span = Span(trace_id=trace_id, span_id="s1", name="op", kind=SpanKind.LLM)
-        span.set_attribute("llm.messages", [
-            {"role": "user", "content": "My email is john@example.com and SSN 123-45-6789"}
-        ])
+        span.set_attribute(
+            "llm.messages", [{"role": "user", "content": "My email is john@example.com and SSN 123-45-6789"}]
+        )
         span.set_attribute("llm.system_prompt", "Call me at (555) 867-5309")
         span.finish(status=SpanStatus.OK)
         return span
@@ -193,6 +194,7 @@ class TestMonitorPiiScrubbing:
         m = Monitor(storage=storage, auto=False, scrub_pii=True, pii_patterns=[r"\bACCT-\d{8}\b"])
         m.start()
         from keeto.core.span import Span, SpanKind, SpanStatus
+
         span = Span(trace_id="t1", span_id="s1", name="op", kind=SpanKind.LLM)
         span.set_attribute("note", "Account ACCT-12345678 was referenced")
         span.finish(status=SpanStatus.OK)

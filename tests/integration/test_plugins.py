@@ -35,6 +35,7 @@ async def _flush() -> None:
     """Wait for the background pipeline to flush its batch."""
     await asyncio.sleep(_FLUSH_WAIT)
 
+
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -376,9 +377,7 @@ class TestAnthropicPlugin:
         resp_body = _anthropic_messages_response(input_tokens=80, output_tokens=40)
 
         async with respx.mock:
-            respx.post("https://api.anthropic.com/v1/messages").mock(
-                return_value=httpx.Response(200, json=resp_body)
-            )
+            respx.post("https://api.anthropic.com/v1/messages").mock(return_value=httpx.Response(200, json=resp_body))
             import anthropic
 
             client = anthropic.AsyncAnthropic(api_key="test-key")

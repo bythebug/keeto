@@ -209,10 +209,12 @@ class Monitor:
         # Sampling: errors are always captured regardless of sample_rate.
         if self._sample_rate < 1.0 and span.status != SpanStatus.ERROR:
             import random
+
             if random.random() > self._sample_rate:
                 return
         if self._scrub_pii:
             from keeto.core._pii import scrub_span
+
             scrub_span(span, self._pii_extra)
         self._pipeline.emit(span)
         if span.cost_usd is not None:

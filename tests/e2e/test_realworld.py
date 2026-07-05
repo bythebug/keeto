@@ -50,10 +50,12 @@ def check(name: str, condition: bool, detail: str = "") -> None:
     results.append((name, condition, detail))
     if not condition:
         import traceback
+
         traceback.print_stack(limit=4)
 
 
 # ─── Response factories ────────────────────────────────────────────────────────
+
 
 def openai_chat_response(
     model: str = "gpt-4o",
@@ -89,9 +91,7 @@ def anthropic_messages_response(
     output_tokens: int = 200,
     tool_uses: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
-    content: list[dict[str, Any]] = (
-        tool_uses if tool_uses else [{"type": "text", "text": "Summary complete."}]
-    )
+    content: list[dict[str, Any]] = tool_uses if tool_uses else [{"type": "text", "text": "Summary complete."}]
     return {
         "id": "msg_test456",
         "type": "message",
@@ -120,6 +120,7 @@ def embedding_response(dims: int = 1536, n: int = 3) -> dict[str, Any]:
 # SCENARIO 1: Two-line quick-start (minimal API)
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 def scenario_quickstart() -> None:
     print("\n━━━ Scenario 1: Two-line quick-start ━━━")
     storage = MemoryStorage()
@@ -146,6 +147,7 @@ def scenario_quickstart() -> None:
 # SCENARIO 2: OpenAI chat with tool calls (RAG pattern)
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 def scenario_openai_rag() -> None:
     print("\n━━━ Scenario 2: OpenAI RAG — chat + tool calls + manual spans ━━━")
     try:
@@ -159,6 +161,7 @@ def scenario_openai_rag() -> None:
     monitor.start()
 
     from keeto.integrations.openai.plugin import OpenAIPlugin
+
     oai_plugin = OpenAIPlugin()
     oai_plugin.install(monitor)
 
@@ -265,8 +268,10 @@ def scenario_openai_rag() -> None:
     check("Turn 1: tool calls captured", span1 is not None and span1.attributes.get("llm.tool_calls_count") == 1)
     finish_ok = span1 is not None and span1.attributes.get("llm.finish_reason") == "tool_calls"
     check("Turn 1: finish_reason=tool_calls", finish_ok)
-    check("Turn 1: tool name is vector_search",
-          span1 is not None and (span1.attributes.get("llm.tool_calls") or [{}])[0].get("name") == "vector_search")
+    check(
+        "Turn 1: tool name is vector_search",
+        span1 is not None and (span1.attributes.get("llm.tool_calls") or [{}])[0].get("name") == "vector_search",
+    )
 
     turn2 = llm_traces[0]  # newest = second call
     span2 = turn2.root_span
@@ -293,6 +298,7 @@ def scenario_openai_rag() -> None:
 # SCENARIO 3: Anthropic summarisation with PII scrubbing
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 def scenario_anthropic_pii() -> None:
     print("\n━━━ Scenario 3: Anthropic summarisation + PII scrubbing ━━━")
     try:
@@ -306,6 +312,7 @@ def scenario_anthropic_pii() -> None:
     monitor.start()
 
     from keeto.integrations.anthropic.plugin import AnthropicPlugin
+
     ant_plugin = AnthropicPlugin()
     ant_plugin.install(monitor)
 
@@ -345,6 +352,7 @@ def scenario_anthropic_pii() -> None:
 # SCENARIO 4: Multi-provider session — OpenAI + Anthropic interleaved
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 def scenario_multi_provider() -> None:
     print("\n━━━ Scenario 4: Multi-provider session ━━━")
     try:
@@ -360,6 +368,7 @@ def scenario_multi_provider() -> None:
 
     from keeto.integrations.anthropic.plugin import AnthropicPlugin
     from keeto.integrations.openai.plugin import OpenAIPlugin
+
     oai_p = OpenAIPlugin()
     ant_p = AnthropicPlugin()
     oai_p.install(monitor)
@@ -414,6 +423,7 @@ def scenario_multi_provider() -> None:
 # SCENARIO 5: Rate limit and error handling
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 def scenario_errors() -> None:
     print("\n━━━ Scenario 5: Rate limits and errors ━━━")
     try:
@@ -427,6 +437,7 @@ def scenario_errors() -> None:
     monitor.start()
 
     from keeto.integrations.openai.plugin import OpenAIPlugin
+
     err_plugin = OpenAIPlugin()
     err_plugin.install(monitor)
 
@@ -462,6 +473,7 @@ def scenario_errors() -> None:
 # SCENARIO 6: Budget alert fires correctly
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 def scenario_budget() -> None:
     print("\n━━━ Scenario 6: Budget alerts ━━━")
     storage = MemoryStorage()
@@ -475,9 +487,12 @@ def scenario_budget() -> None:
 
     for i in range(3):
         span = Span(
-            trace_id=f"t{i}", span_id=f"s{i}",
-            name="openai.chat", kind=SpanKind.LLM,
-            provider="openai", model="gpt-4o",
+            trace_id=f"t{i}",
+            span_id=f"s{i}",
+            name="openai.chat",
+            kind=SpanKind.LLM,
+            provider="openai",
+            model="gpt-4o",
         )
         span.cost_usd = 0.003
         span.input_tokens = 200
@@ -495,6 +510,7 @@ def scenario_budget() -> None:
 # ═══════════════════════════════════════════════════════════════════════════════
 # SCENARIO 7: Export to JSON and CSV
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 def scenario_export(tmp_path: Path) -> None:
     print("\n━━━ Scenario 7: Export JSON + CSV ━━━")
@@ -527,6 +543,7 @@ def scenario_export(tmp_path: Path) -> None:
 # ═══════════════════════════════════════════════════════════════════════════════
 # SCENARIO 8: Recommendations engine
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 def scenario_recommendations() -> None:
     print("\n━━━ Scenario 8: Recommendations engine ━━━")
@@ -570,6 +587,7 @@ def scenario_recommendations() -> None:
 # SCENARIO 9: Trace comparison
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 def scenario_compare() -> None:
     print("\n━━━ Scenario 9: Trace comparison ━━━")
     from keeto.analyzers.comparison import TraceComparison
@@ -580,9 +598,12 @@ def scenario_compare() -> None:
 
     for model, cost in [("gpt-4o", 0.04), ("gpt-4o-mini", 0.004)]:
         span = Span(
-            trace_id=f"cmp-{model}", span_id=f"sc-{model}",
-            name="openai.chat", kind=SpanKind.LLM,
-            provider="openai", model=model,
+            trace_id=f"cmp-{model}",
+            span_id=f"sc-{model}",
+            name="openai.chat",
+            kind=SpanKind.LLM,
+            provider="openai",
+            model=model,
         )
         span.input_tokens = 500
         span.output_tokens = 200
@@ -606,6 +627,7 @@ def scenario_compare() -> None:
 # ═══════════════════════════════════════════════════════════════════════════════
 # SCENARIO 10: SQLite storage persistence
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 def scenario_sqlite(tmp_path: Path) -> None:
     print("\n━━━ Scenario 10: SQLite persistent storage ━━━")
@@ -642,6 +664,7 @@ def scenario_sqlite(tmp_path: Path) -> None:
 # SCENARIO 11: Rich dashboard renders without error
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 def scenario_dashboard() -> None:
     print("\n━━━ Scenario 11: Rich dashboard ━━━")
     storage = MemoryStorage()
@@ -650,9 +673,12 @@ def scenario_dashboard() -> None:
 
     for i in range(4):
         span = Span(
-            trace_id=f"dash-{i}", span_id=f"sd{i}",
-            name="openai.chat", kind=SpanKind.LLM,
-            provider="openai", model="gpt-4o",
+            trace_id=f"dash-{i}",
+            span_id=f"sd{i}",
+            name="openai.chat",
+            kind=SpanKind.LLM,
+            provider="openai",
+            model="gpt-4o",
         )
         span.input_tokens = 300 + i * 100
         span.output_tokens = 120 + i * 30
@@ -677,6 +703,7 @@ def scenario_dashboard() -> None:
 # SCENARIO 12: LiteLLM callback integration
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 def scenario_litellm() -> None:
     print("\n━━━ Scenario 12: LiteLLM callback ━━━")
     try:
@@ -690,6 +717,7 @@ def scenario_litellm() -> None:
     monitor.start()
 
     from keeto.integrations.litellm.plugin import LiteLLMPlugin
+
     litellm_plugin = LiteLLMPlugin()
     litellm_plugin.install(monitor)
 
@@ -727,6 +755,7 @@ def scenario_litellm() -> None:
 # SCENARIO 13: Context manager lifecycle
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 def scenario_context_manager() -> None:
     print("\n━━━ Scenario 13: Monitor as context manager ━━━")
     storage = MemoryStorage()
@@ -746,6 +775,7 @@ def scenario_context_manager() -> None:
 # ═══════════════════════════════════════════════════════════════════════════════
 # SCENARIO 14: Nested spans with trace propagation
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 def scenario_nested_spans() -> None:
     print("\n━━━ Scenario 14: Nested spans with trace propagation ━━━")
@@ -789,6 +819,7 @@ def scenario_nested_spans() -> None:
 # SCENARIO 15: Error span propagation
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 def scenario_error_span() -> None:
     print("\n━━━ Scenario 15: Error span capture ━━━")
     storage = MemoryStorage()
@@ -813,6 +844,7 @@ def scenario_error_span() -> None:
 # ═══════════════════════════════════════════════════════════════════════════════
 # Pytest entry point
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 def test_realworld_e2e(tmp_path: Path) -> None:
     """Run all 15 real-world scenarios and assert all checks pass."""
@@ -847,13 +879,14 @@ def test_realworld_e2e(tmp_path: Path) -> None:
 # Standalone runner
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 def main() -> None:
     import tempfile
 
     tmp = Path(tempfile.mkdtemp(prefix="keeto_e2e_"))
-    print(f"\n{'═'*60}")
+    print(f"\n{'═' * 60}")
     print("  KEETO — Real-World End-to-End Test Suite")
-    print(f"{'═'*60}")
+    print(f"{'═' * 60}")
     print(f"  Temp dir: {tmp}")
     print(f"  Time: {datetime.now().isoformat()}")
 
@@ -878,9 +911,9 @@ def main() -> None:
     failed_list = [(n, d) for n, ok, d in results if not ok]
     total = len(results)
 
-    print(f"\n{'═'*60}")
+    print(f"\n{'═' * 60}")
     print(f"  Results: {passed}/{total} passed, {len(failed_list)} failed")
-    print(f"{'═'*60}")
+    print(f"{'═' * 60}")
 
     if failed_list:
         print("\nFailed checks:")
