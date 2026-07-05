@@ -58,6 +58,8 @@ llamaindex = "keeto.integrations.llamaindex:LlamaIndexPlugin"
 litellm = "keeto.integrations.litellm:LiteLLMPlugin"
 gemini = "keeto.integrations.gemini:GeminiPlugin"
 ollama = "keeto.integrations.ollama:OllamaPlugin"
+openai_agents = "keeto.integrations.openai_agents:OpenAIAgentsPlugin"
+pydantic_ai = "keeto.integrations.pydantic_ai:PydanticAIPlugin"
 
 [project.urls]
 Homepage = "https://github.com/keeto-dev/keeto"

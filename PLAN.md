@@ -491,31 +491,31 @@ docs/
 
 ### Milestone 3: Integrations (v0.3) — Issues 41–65
 
-- [ ] 41. `[STORAGE]` SQLite storage backend with aiosqlite (`keeto[sqlite]` extra)
-- [ ] 42. `[INTEGRATION]` LangChain `BaseCallbackHandler` plugin
-- [ ] 43. `[INTEGRATION]` LlamaIndex event/callback handler plugin
-- [ ] 44. `[INTEGRATION]` LiteLLM plugin (proxy interceptor)
-- [ ] 45. `[INTEGRATION]` Google Gemini plugin (`google-generativeai`)
-- [ ] 46. `[INTEGRATION]` Ollama plugin (local model tracing)
-- [ ] 47. `[INTEGRATION]` OpenAI Agents SDK trace integration
-- [ ] 48. `[INTEGRATION]` PydanticAI instrument hook
-- [ ] 49. `[INTEGRATION]` FastAPI middleware (per-request trace context)
-- [ ] 50. `[INTEGRATION]` vLLM plugin (OpenAI-compatible endpoint)
-- [ ] 51. `[INTEGRATION]` Tool call tracing: structured input/output capture
-- [ ] 52. `[INTEGRATION]` Structured output validation tracing (Pydantic parse errors)
-- [ ] 53. `[INTEGRATION]` Retry detection: count retries, log reason
-- [ ] 54. `[INTEGRATION]` Rate limit event detection and `RateLimitEvent` emission
-- [ ] 55. `[INTEGRATION]` Embedding request tracing (model, dimensions, batch size)
-- [ ] 56. `[INTEGRATION]` Image/multimodal request tracing (vision inputs)
-- [ ] 57. `[INTEGRATION]` Batch request tracing (OpenAI Batch API)
-- [ ] 58. `[INTEGRATION]` Parallel tool call visualization (fan-out + join)
-- [ ] 59. `[COST]` Gemini and Ollama pricing entries
-- [ ] 60. `[COST]` LiteLLM pricing passthrough
-- [ ] 61. `[COST]` Cost budget alerts: `monitor.set_budget(daily_usd=10.0)`
-- [ ] 62. `[COST]` Daily/hourly cost aggregation queries
-- [ ] 63. `[COST]` Provider cost comparison report
-- [ ] 64. `[INTEGRATION]` Agent loop detection heuristic (same prompt repeated >N times)
-- [ ] 65. `[TEST]` Integration test harness with `respx` mocks for all HTTP-based plugins
+- [x] 41. `[STORAGE]` SQLite storage backend with aiosqlite (`keeto[sqlite]` extra)
+- [x] 42. `[INTEGRATION]` LangChain `BaseCallbackHandler` plugin
+- [x] 43. `[INTEGRATION]` LlamaIndex event/callback handler plugin
+- [x] 44. `[INTEGRATION]` LiteLLM plugin (proxy interceptor)
+- [x] 45. `[INTEGRATION]` Google Gemini plugin (`google-generativeai`)
+- [x] 46. `[INTEGRATION]` Ollama plugin (local model tracing)
+- [x] 47. `[INTEGRATION]` OpenAI Agents SDK trace integration
+- [x] 48. `[INTEGRATION]` PydanticAI instrument hook
+- [x] 49. `[INTEGRATION]` FastAPI middleware (per-request trace context)
+- [x] 50. `[INTEGRATION]` vLLM plugin (OpenAI-compatible endpoint)
+- [x] 51. `[INTEGRATION]` Tool call tracing: structured input/output capture
+- [x] 52. `[INTEGRATION]` Structured output validation tracing (Pydantic parse errors)
+- [x] 53. `[INTEGRATION]` Retry detection: count retries, log reason
+- [x] 54. `[INTEGRATION]` Rate limit event detection and `RateLimitEvent` emission
+- [x] 55. `[INTEGRATION]` Embedding request tracing (model, dimensions, batch size)
+- [x] 56. `[INTEGRATION]` Image/multimodal request tracing (vision inputs)
+- [x] 57. `[INTEGRATION]` Batch request tracing (OpenAI Batch API)
+- [x] 58. `[INTEGRATION]` Parallel tool call visualization (fan-out + join)
+- [x] 59. `[COST]` Gemini and Ollama pricing entries
+- [x] 60. `[COST]` LiteLLM pricing passthrough
+- [x] 61. `[COST]` Cost budget alerts: `monitor.set_budget(daily_usd=10.0)`
+- [x] 62. `[COST]` Daily/hourly cost aggregation queries
+- [x] 63. `[COST]` Provider cost comparison report
+- [x] 64. `[INTEGRATION]` Agent loop detection heuristic (same prompt repeated >N times)
+- [x] 65. `[TEST]` Integration test harness with `respx` mocks for all HTTP-based plugins
 
 ### Milestone 4: Analysis Engine (v0.4) — Issues 66–80
 

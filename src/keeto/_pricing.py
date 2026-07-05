@@ -53,6 +53,7 @@ PRICES: dict[str, dict[str, dict[str, float]]] = {
         "gemini-1.5-pro": {"input": 1.25, "output": 5.00, "cached_input": 0.31},
         "gemini-1.5-flash": {"input": 0.075, "output": 0.30, "cached_input": 0.01875},
     },
+    "ollama": {},
 }
 
 
@@ -67,6 +68,10 @@ def cost_usd(
     Calculate USD cost for a request. Returns None if pricing is unknown.
     Prices are stored per 1M tokens.
     """
+    # Ollama runs locally — always free
+    if provider == "ollama":
+        return 0.0
+
     p = PRICES.get(provider, {})
     # Try exact match, then strip date suffix (e.g. -20241022)
     entry = p.get(model)

@@ -75,6 +75,16 @@ class Monitor:
         self._started = False
         self._console = Console(stderr=True)
 
+        # Budget and cost tracking (issues #61, #62)
+        self._budget_daily_usd: float | None = None
+        self._budget_session_usd: float | None = None
+        self._session_cost_usd: float = 0.0
+        self._daily_cost_usd: float = 0.0
+        self._daily_cost_date: Any = None  # datetime.date
+        self._cost_by_provider: dict[str, float] = {}
+        self._cost_by_model: dict[str, float] = {}
+        self._budget_alert_fired: set[str] = set()
+
         # Lazy-imported to avoid circular imports
         self._registry: Any = None
 
@@ -180,6 +190,81 @@ class Monitor:
         if not self._started:
             return
         self._pipeline.emit(span)
+        if span.cost_usd is not None:
+            self._session_cost_usd += span.cost_usd
+            self._accumulate_cost(span)
+            self._check_budget()
+
+    # ------------------------------------------------------------------
+    # Budget management (issue #61)
+    # ------------------------------------------------------------------
+
+    def set_budget(
+        self,
+        daily_usd: float | None = None,
+        session_usd: float | None = None,
+    ) -> None:
+        """Set cost budget thresholds. Logs a warning when exceeded."""
+        self._budget_daily_usd = daily_usd
+        self._budget_session_usd = session_usd
+
+    def _accumulate_cost(self, span: Span) -> None:
+        from datetime import date
+
+        cost = span.cost_usd
+        if cost is None:
+            return
+
+        today = date.today()
+        if self._daily_cost_date != today:
+            self._daily_cost_date = today
+            self._daily_cost_usd = 0.0
+        self._daily_cost_usd += cost
+
+        p = span.provider or "unknown"
+        m = span.model or "unknown"
+        self._cost_by_provider[p] = self._cost_by_provider.get(p, 0.0) + cost
+        self._cost_by_model[m] = self._cost_by_model.get(m, 0.0) + cost
+
+    def _check_budget(self) -> None:
+        from datetime import date
+
+        if self._budget_session_usd is not None:
+            key = "session"
+            if key not in self._budget_alert_fired and self._session_cost_usd >= self._budget_session_usd:
+                self._budget_alert_fired.add(key)
+                self._console.print(
+                    f"[yellow]keeto: session budget exceeded "
+                    f"(${self._session_cost_usd:.4f} >= ${self._budget_session_usd:.4f})[/yellow]"
+                )
+
+        if self._budget_daily_usd is not None:
+            key = f"daily_{date.today()}"
+            if key not in self._budget_alert_fired and self._daily_cost_usd >= self._budget_daily_usd:
+                self._budget_alert_fired.add(key)
+                self._console.print(
+                    f"[yellow]keeto: daily budget exceeded "
+                    f"(${self._daily_cost_usd:.4f} >= ${self._budget_daily_usd:.4f})[/yellow]"
+                )
+
+    # ------------------------------------------------------------------
+    # Cost aggregation (issue #62)
+    # ------------------------------------------------------------------
+
+    def cost_summary(self) -> dict[str, Any]:
+        """Return a cost summary dict with session, today, and per-provider totals."""
+        return {
+            "session_usd": round(self._session_cost_usd, 6),
+            "today_usd": round(self._daily_cost_usd, 6),
+            "by_provider": {
+                k: round(v, 6)
+                for k, v in sorted(self._cost_by_provider.items(), key=lambda x: -x[1])
+            },
+            "by_model": {
+                k: round(v, 6)
+                for k, v in sorted(self._cost_by_model.items(), key=lambda x: -x[1])
+            },
+        }
 
     # ------------------------------------------------------------------
     # Read access

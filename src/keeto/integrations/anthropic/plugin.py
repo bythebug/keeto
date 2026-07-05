@@ -2,7 +2,7 @@
 Anthropic plugin for Keeto.
 
 Patches httpx transport on both sync and async Anthropic clients.
-Extracts model, token counts, and cost from Anthropic's response format.
+Extracts model, token counts, cost, tool calls, and multimodal inputs.
 """
 
 from __future__ import annotations
@@ -99,6 +99,12 @@ class AnthropicPlugin(Plugin):
         if _MESSAGES_PATH not in request.url.path:
             return
 
+        if response.status_code == 429:
+            self._handle_rate_limit(span, request, response)
+            if self._monitor:
+                self._monitor.emit(span)
+            return
+
         span.name = "anthropic.messages"
 
         req_body = _try_parse_json(request.content)
@@ -107,11 +113,31 @@ class AnthropicPlugin(Plugin):
             span.model = model
             span.set_attribute("llm.model", model)
             span.set_attribute("llm.stream", req_body.get("stream", False))
+
             messages = req_body.get("messages", [])
             span.set_attribute("llm.message_count", len(messages))
+
             system = req_body.get("system")
             if system:
                 span.set_attribute("llm.has_system_prompt", True)
+
+            # Issue #56: multimodal detection
+            has_images = any(
+                isinstance(m.get("content"), list)
+                and any(c.get("type") == "image" for c in m["content"])
+                for m in messages
+                if isinstance(m, dict)
+            )
+            if has_images:
+                span.set_attribute("llm.multimodal", True)
+
+            # Issue #51: tool definitions
+            tools = req_body.get("tools")
+            if tools:
+                span.set_attribute("llm.tool_count", len(tools))
+                span.set_attribute("llm.tool_names", [
+                    t.get("name") for t in tools if isinstance(t, dict)
+                ])
 
         resp_body = _try_parse_json(response.content)
         if resp_body:
@@ -119,7 +145,6 @@ class AnthropicPlugin(Plugin):
             span.model = model_name
 
             usage = resp_body.get("usage", {})
-            # Anthropic uses input_tokens / output_tokens directly
             span.input_tokens = usage.get("input_tokens")
             span.output_tokens = usage.get("output_tokens")
             span.cached_tokens = usage.get("cache_read_input_tokens", 0)
@@ -135,5 +160,28 @@ class AnthropicPlugin(Plugin):
 
             span.set_attribute("llm.stop_reason", resp_body.get("stop_reason"))
 
+            # Issue #51: tool call capture from response content blocks
+            content_blocks = resp_body.get("content", [])
+            tool_uses = [b for b in content_blocks if isinstance(b, dict) and b.get("type") == "tool_use"]
+            if tool_uses:
+                span.set_attribute("llm.tool_calls_count", len(tool_uses))
+                span.set_attribute("llm.tool_calls", [
+                    {"id": b.get("id"), "name": b.get("name"), "input": b.get("input")}
+                    for b in tool_uses
+                ])
+                if len(tool_uses) > 1:
+                    span.set_attribute("llm.parallel_tool_calls", True)
+
+        # Issue #53: retry detection via Anthropic SDK header
+        retry_count = request.headers.get("x-stainless-retry-count")
+        if retry_count and int(retry_count) > 0:
+            span.set_attribute("llm.retry_count", int(retry_count))
+
         if self._monitor:
             self._monitor.emit(span)
+
+    def _handle_rate_limit(self, span: Span, request: httpx.Request, response: httpx.Response) -> None:
+        span.name = "anthropic.rate_limit"
+        retry_after = response.headers.get("retry-after")
+        span.set_attribute("rate_limit.retry_after_s", float(retry_after) if retry_after else None)
+        span.set_attribute("http.status_code", 429)
