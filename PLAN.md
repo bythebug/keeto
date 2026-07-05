@@ -550,15 +550,15 @@ docs/
 
 ### Milestone 6: CLI & Polish (v1.0) — Issues 91–100
 
-- [ ] 91. `[CLI]` `keeto` CLI skeleton with typer + shell completion
-- [ ] 92. `[CLI]` `keeto traces` — list recent traces (table or JSON)
-- [ ] 93. `[CLI]` `keeto dashboard` — launch TUI or web dashboard
-- [ ] 94. `[CLI]` `keeto replay <trace-id>` — replay a captured trace
-- [ ] 95. `[CLI]` `keeto export [--format json|csv|otel] [--output file]`
-- [ ] 96. `[CLI]` `keeto analyze` — print recommendations report
-- [ ] 97. `[CLI]` `keeto config [get|set|list]` — manage `~/.keeto/config.toml`
-- [ ] 98. `[CLI]` `keeto doctor` — diagnose setup issues
-- [ ] 99. `[CLI]` `keeto compare <id1> <id2>` — side-by-side trace diff
+- [x] 91. `[CLI]` `keeto` CLI skeleton with typer + shell completion
+- [x] 92. `[CLI]` `keeto traces` — list recent traces (table or JSON)
+- [x] 93. `[CLI]` `keeto dashboard` — launch TUI or web dashboard
+- [x] 94. `[CLI]` `keeto replay <trace-id>` — replay a captured trace
+- [x] 95. `[CLI]` `keeto export [--format json|csv|otel] [--output file]`
+- [x] 96. `[CLI]` `keeto analyze` — print recommendations report
+- [x] 97. `[CLI]` `keeto config [get|set|list]` — manage `~/.keeto/config.toml`
+- [x] 98. `[CLI]` `keeto doctor` — diagnose setup issues
+- [x] 99. `[CLI]` `keeto compare <id1> <id2>` — side-by-side trace diff
 - [ ] 100. `[DOCS]` v1.0 documentation complete
 
 ---
