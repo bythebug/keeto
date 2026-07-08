@@ -1,5 +1,9 @@
 # API Reference
 
+## Module-level helpers
+
+::: keeto.trace
+
 ## Monitor
 
 ::: keeto.core.monitor.Monitor
@@ -8,6 +12,8 @@
         - start
         - stop
         - span
+        - trace
+        - pipeline_breakdown
         - emit
         - dashboard
         - export

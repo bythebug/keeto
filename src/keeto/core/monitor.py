@@ -31,7 +31,25 @@ from keeto.core.span import Span, SpanKind, SpanStatus, Trace
 from keeto.storage.memory import MemoryStorage
 
 if TYPE_CHECKING:
-    from collections.abc import Generator
+    from collections.abc import Callable, Generator
+
+
+def _kind_from_name(name: str) -> SpanKind:
+    """Infer a SpanKind from a common stage name."""
+    lower = name.lower().replace("-", "").replace("_", "").replace(" ", "")
+    if lower in {"embedding", "embed", "embeddings"}:
+        return SpanKind.EMBEDDING
+    if lower in {"retrieval", "retrieve", "search", "vectorsearch", "similaritysearch", "rerank", "reranking"}:
+        return SpanKind.RETRIEVAL
+    if lower in {"llm", "generate", "completion", "inference", "chat"}:
+        return SpanKind.LLM
+    if lower in {"tool", "toolcall", "function"}:
+        return SpanKind.TOOL
+    if lower in {"chain", "pipeline", "rag"}:
+        return SpanKind.CHAIN
+    if lower == "agent":
+        return SpanKind.AGENT
+    return SpanKind.CUSTOM
 
 log = logging.getLogger(__name__)
 
@@ -197,6 +215,109 @@ class Monitor:
             self._pipeline.emit(sp)
             reset_trace_id(trace_token)
             reset_span_id(span_token)
+
+    def trace(
+        self,
+        name: str,
+        kind: SpanKind | None = None,
+    ) -> Callable:
+        """Decorator that wraps a sync or async function as a named span.
+
+        Usage::
+
+            @monitor.trace("embedding")
+            def embed(text: str) -> list[float]:
+                ...
+
+            @monitor.trace("retrieval")
+            async def search(query: str) -> list[str]:
+                ...
+        """
+        import functools
+        import inspect
+
+        resolved_kind = kind if kind is not None else _kind_from_name(name)
+
+        def decorator(fn: Callable) -> Callable:
+            if inspect.iscoroutinefunction(fn):
+
+                @functools.wraps(fn)
+                async def _async_wrapper(*args: Any, **kwargs: Any) -> Any:
+                    with self.span(name, kind=resolved_kind):
+                        return await fn(*args, **kwargs)
+
+                return _async_wrapper
+
+            @functools.wraps(fn)
+            def _sync_wrapper(*args: Any, **kwargs: Any) -> Any:
+                with self.span(name, kind=resolved_kind):
+                    return fn(*args, **kwargs)
+
+            return _sync_wrapper
+
+        return decorator
+
+    # ------------------------------------------------------------------
+    # Pipeline breakdown display
+    # ------------------------------------------------------------------
+
+    def pipeline_breakdown(self, trace: Trace | None = None) -> None:
+        """Print a stage-by-stage latency breakdown for the most recent trace (or a given one).
+
+        Output example::
+
+            Trace abc123de
+
+            Embedding        18 ms
+            Retrieval        12 ms
+            Rerank           65 ms
+            Prompt Build      7 ms
+            LLM            1100 ms
+            ──────────────────────
+            Total          1202 ms
+
+            Slowest stage: LLM (91.5%)
+        """
+        import asyncio
+
+        from rich import box
+        from rich.table import Table
+
+        if trace is None:
+            traces = asyncio.run(self._storage.list_traces(limit=1))
+            if not traces:
+                self._console.print("[dim]No traces captured yet.[/dim]")
+                return
+            trace = traces[0]
+
+        spans = sorted(
+            (s for s in trace.spans if s.latency_ms is not None),
+            key=lambda s: s.start_time,
+        )
+        if not spans:
+            self._console.print("[dim]No completed spans in this trace.[/dim]")
+            return
+
+        total_ms = sum(s.latency_ms or 0.0 for s in spans)
+
+        table = Table(box=box.SIMPLE, show_header=False, pad_edge=False)
+        table.add_column("Stage", style="bold white")
+        table.add_column("Latency", justify="right", style="cyan")
+
+        for sp in spans:
+            ms = sp.latency_ms or 0.0
+            table.add_row(sp.name, f"{ms:.0f} ms")
+
+        table.add_section()
+        table.add_row("Total", f"{total_ms:.0f} ms")
+
+        self._console.print(f"\n[bold]Trace {trace.trace_id[:8]}[/bold]\n")
+        self._console.print(table)
+
+        if total_ms > 0:
+            slowest = max(spans, key=lambda s: s.latency_ms or 0.0)
+            pct = (slowest.latency_ms or 0.0) / total_ms * 100
+            self._console.print(f"\n[yellow]Slowest stage:[/yellow] {slowest.name} ({pct:.1f}%)\n")
 
     # ------------------------------------------------------------------
     # Direct span emission (used by plugins)

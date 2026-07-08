@@ -87,6 +87,7 @@ nav:
     - PydanticAI: integrations/pydantic-ai.md
     - FastAPI: integrations/fastapi.md
     - vLLM: integrations/vllm.md
+    - Custom Instrumentation: integrations/custom.md
   - Features:
     - Dashboard: dashboard/tui.md
     - Web Dashboard: dashboard/web.md

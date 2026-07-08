@@ -52,6 +52,7 @@ monitor.start()
 | [PydanticAI](pydantic-ai.md) | `pydantic-ai` | `PydanticAIPlugin` |
 | [FastAPI](fastapi.md) | `fastapi` | Middleware |
 | [vLLM](vllm.md) | `vllm` | `VLLMPlugin` |
+| [Custom / own framework](custom.md) | — | `@trace` decorator |
 
 ## Third-party plugins
 
