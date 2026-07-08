@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "keeto"
-version = "0.2.0"
+version = "0.2.1"
 description = "Zero-config AI observability for Python — automatic tracing, cost tracking, and dashboards for LLM calls and custom pipelines"
 readme = "README.md"
 license = { file = "LICENSE" }
