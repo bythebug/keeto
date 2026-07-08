@@ -29,38 +29,89 @@ class PydanticAIPlugin(Plugin):
     def _patch_pydantic_ai(self) -> None:
         try:
             from pydantic_ai import Agent
+        except ImportError:
+            return
 
-            original_run = Agent.run
-            original_run_sync = Agent.run_sync
+        from keeto.core.span import Span, SpanKind, SpanStatus
 
-            async def patched_run(self_agent: Any, *args: Any, **kwargs: Any) -> Any:
-                from keeto.core.context import new_trace_id, reset_trace_id, set_trace_id
+        plugin = self
+        original_run = Agent.run
+        original_run_sync = Agent.run_sync
 
-                tid = new_trace_id()
-                token = set_trace_id(tid)
-                try:
-                    return await original_run(self_agent, *args, **kwargs)
-                finally:
-                    reset_trace_id(token)
+        async def patched_run(self_agent: Any, *args: Any, **kwargs: Any) -> Any:
+            from keeto.core.context import (
+                new_span_id,
+                new_trace_id,
+                reset_span_id,
+                reset_trace_id,
+                set_span_id,
+                set_trace_id,
+            )
 
-            def patched_run_sync(self_agent: Any, *args: Any, **kwargs: Any) -> Any:
-                from keeto.core.context import new_trace_id, reset_trace_id, set_trace_id
+            agent_name = getattr(self_agent, "name", None) or "agent"
+            tid = new_trace_id()
+            sid = new_span_id()
+            trace_token = set_trace_id(tid)
+            span_token = set_span_id(sid)
+            span = Span(
+                trace_id=tid,
+                span_id=sid,
+                name=f"pydantic_ai.{agent_name}",
+                kind=SpanKind.AGENT,
+            )
+            try:
+                result = await original_run(self_agent, *args, **kwargs)
+                span.finish(status=SpanStatus.OK)
+                return result
+            except Exception as exc:
+                span.finish(status=SpanStatus.ERROR, status_message=str(exc))
+                raise
+            finally:
+                if plugin._monitor:
+                    plugin._monitor.emit(span)
+                reset_trace_id(trace_token)
+                reset_span_id(span_token)
 
-                tid = new_trace_id()
-                token = set_trace_id(tid)
-                try:
-                    return original_run_sync(self_agent, *args, **kwargs)
-                finally:
-                    reset_trace_id(token)
+        def patched_run_sync(self_agent: Any, *args: Any, **kwargs: Any) -> Any:
+            from keeto.core.context import (
+                new_span_id,
+                new_trace_id,
+                reset_span_id,
+                reset_trace_id,
+                set_span_id,
+                set_trace_id,
+            )
 
-            Agent.run = patched_run  # type: ignore[method-assign]
-            Agent.run_sync = patched_run_sync  # type: ignore[method-assign]
+            agent_name = getattr(self_agent, "name", None) or "agent"
+            tid = new_trace_id()
+            sid = new_span_id()
+            trace_token = set_trace_id(tid)
+            span_token = set_span_id(sid)
+            span = Span(
+                trace_id=tid,
+                span_id=sid,
+                name=f"pydantic_ai.{agent_name}",
+                kind=SpanKind.AGENT,
+            )
+            try:
+                result = original_run_sync(self_agent, *args, **kwargs)
+                span.finish(status=SpanStatus.OK)
+                return result
+            except Exception as exc:
+                span.finish(status=SpanStatus.ERROR, status_message=str(exc))
+                raise
+            finally:
+                if plugin._monitor:
+                    plugin._monitor.emit(span)
+                reset_trace_id(trace_token)
+                reset_span_id(span_token)
 
-            self._patched_agent_class = Agent
-            self._original_run = original_run
-            self._original_run_sync = original_run_sync
-        except Exception:
-            pass
+        Agent.run = patched_run  # type: ignore[method-assign]
+        Agent.run_sync = patched_run_sync  # type: ignore[method-assign]
+
+        self._patched_agent_class = Agent
+        self._original_run = original_run
+        self._original_run_sync = original_run_sync
 
     def uninstall(self) -> None:
         if self._patched_agent_class is not None:

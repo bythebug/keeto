@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextlib
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any, ClassVar
 
@@ -28,30 +29,45 @@ class LangChainPlugin(Plugin):
         self._monitor: Monitor | None = None
         self._spans: dict[str, Span] = {}
         self._handler: Any = None
+        self._original_configure: Any = None
+        self._mgr: Any = None
 
     def install(self, monitor: Monitor) -> None:
-        import contextlib
-
         self._monitor = monitor
-        with contextlib.suppress(ImportError):
-            from langchain_core.callbacks.manager import add_open_telemetry_tracer  # noqa: F401
-        with contextlib.suppress(ImportError):
+        try:
             import langchain_core.callbacks.manager as _mgr
+        except ImportError:
+            return
 
-            _handler = _LangChainHandler(plugin=self)
-            self._handler = _handler
-            # Auto-register as a global handler so all chains pick it up.
-            if hasattr(_mgr, "_configure"):
-                pass
-            if hasattr(_mgr, "get_callback_manager_for_config"):
-                pass
-            # LangChain exposes a global list of inheritable handlers.
-            if hasattr(_mgr, "openai_callback_var"):
-                pass
-            with contextlib.suppress(ImportError):
-                from langchain_core.tracers.context import tracing_v2_enabled  # noqa: F401
+        handler = _LangChainHandler(plugin=self)
+        self._handler = handler
+        self._mgr = _mgr
+
+        # Monkey-patch _configure so every LangChain runnable automatically
+        # gets the Keeto handler injected into its callback manager.
+        original_configure = getattr(_mgr, "_configure", None)
+        if original_configure is None:
+            return
+
+        self._original_configure = original_configure
+        _plugin = self
+
+        def _patched_configure(*args: Any, **kwargs: Any) -> Any:
+            cm = original_configure(*args, **kwargs)
+            if cm is not None:
+                existing = {type(h).__name__ for h in getattr(cm, "handlers", [])}
+                if "_KeetoLangChainHandler" not in existing:
+                    with contextlib.suppress(Exception):
+                        cm.add_handler(_plugin._handler, inherit=True)
+            return cm
+
+        _mgr._configure = _patched_configure
 
     def uninstall(self) -> None:
+        if self._original_configure is not None and self._mgr is not None:
+            self._mgr._configure = self._original_configure
+        self._original_configure = None
+        self._mgr = None
         self._handler = None
         self._spans.clear()
         self._monitor = None

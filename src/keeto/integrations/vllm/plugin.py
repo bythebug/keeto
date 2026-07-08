@@ -10,10 +10,15 @@ if TYPE_CHECKING:
 
 class VLLMPlugin(Plugin):
     """
-    vLLM serves an OpenAI-compatible REST API, so the OpenAIPlugin already
-    captures traffic from users who point openai.OpenAI(base_url=...) at a
-    vLLM server. This plugin is a named marker so Keeto's registry can report
-    "vllm loaded" and future vLLM-specific enrichment can land here.
+    vLLM serves an OpenAI-compatible REST API, so the OpenAIPlugin captures
+    all traffic automatically when the OpenAI SDK is pointed at a vLLM server
+    via base_url. This plugin is a named registry marker; no additional
+    patching is required.
+
+    Note: spans are tagged provider="openai" because the OpenAI SDK is the
+    transport layer. Latency, token counts, and model names are captured
+    correctly. Cost is not computed (self-hosted inference has no per-token
+    API price).
     """
 
     name: ClassVar[str] = "vllm"
