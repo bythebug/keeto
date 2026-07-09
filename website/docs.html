@@ -8,6 +8,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -424,6 +426,10 @@
       line-height: 1.55;
     }
 
+    /* Lucide icon sizing */
+    .callout-icon svg { width: 16px; height: 16px; color: var(--orange); vertical-align: middle; }
+    .step-num svg     { width: 13px; height: 13px; color: var(--orange); }
+
     /* ────────────────── RESPONSIVE ────────────────── */
     @media (max-width: 900px) {
       .sidebar { display: none; }
@@ -599,7 +605,7 @@ pip install <span class="str">"keeto[sqlite,tui,web,otel]"</span></div>
       </div>
 
       <div class="callout callout-tip">
-        <span class="callout-icon">💡</span>
+        <span class="callout-icon"><i data-lucide="lightbulb"></i></span>
         <div>Set <code>KEETO_DISABLED=1</code> in the environment to make <code>monitor.start()</code> a no-op — useful for tests and CI where you don't want tracing overhead.</div>
       </div>
     </div>
@@ -1031,6 +1037,8 @@ $ keeto dashboard --mode tui</div>
 </div>
 
 <script>
+  lucide.createIcons();
+
   // Scrollspy — highlight sidebar link matching current scroll position
   const links = document.querySelectorAll('.sidebar-link');
   const sections = Array.from(document.querySelectorAll('.doc-section'));

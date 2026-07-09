@@ -8,6 +8,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -773,6 +775,12 @@
     @media (max-width: 500px) {
       .features-grid { grid-template-columns: 1fr; }
     }
+
+    /* Lucide icon sizing */
+    .how-card-icon svg   { width: 18px; height: 18px; color: var(--orange); }
+    .feature-icon        { font-size: 0; }
+    .feature-icon svg    { width: 22px; height: 22px; color: var(--orange); }
+    .slowest-badge svg   { width: 13px; height: 13px; vertical-align: middle; margin-right: .25rem; }
   </style>
 </head>
 <body>
@@ -880,7 +888,7 @@
     <!-- Card 1 -->
     <div class="how-card">
       <div class="how-card-header">
-        <div class="how-card-icon">⚡</div>
+        <div class="how-card-icon"><i data-lucide="zap"></i></div>
         <div class="how-card-title">Auto-detect AI SDK calls</div>
         <div class="how-card-desc">
           Keeto scans installed packages at startup and patches their HTTP
@@ -904,7 +912,7 @@
     <!-- Card 2 -->
     <div class="how-card">
       <div class="how-card-header">
-        <div class="how-card-icon">🔬</div>
+        <div class="how-card-icon"><i data-lucide="layers"></i></div>
         <div class="how-card-title">Instrument your own pipeline</div>
         <div class="how-card-desc">
           Building a RAG pipeline or multi-stage workflow? Use
@@ -976,7 +984,7 @@
         </div>
       </div>
       <div class="slowest-badge">
-        ⚡ Slowest stage: <strong>llm</strong> — 91.5% of total time
+        <i data-lucide="alert-triangle"></i> Slowest stage: <strong>llm</strong> — 91.5% of total time
       </div>
     </div>
 
@@ -1017,7 +1025,7 @@
 
   <div class="features-grid">
     <div class="feature-card">
-      <div class="feature-icon">⚡</div>
+      <div class="feature-icon"><i data-lucide="zap"></i></div>
       <div class="feature-title">Zero config</div>
       <div class="feature-desc">
         <code style="font-family:'JetBrains Mono',monospace;font-size:.85em">monitor.start()</code> is the entire setup.
@@ -1025,7 +1033,7 @@
       </div>
     </div>
     <div class="feature-card">
-      <div class="feature-icon">💰</div>
+      <div class="feature-icon"><i data-lucide="circle-dollar-sign"></i></div>
       <div class="feature-title">Cost tracking</div>
       <div class="feature-desc">
         Every span captures input tokens, output tokens, cached tokens, and USD cost
@@ -1033,7 +1041,7 @@
       </div>
     </div>
     <div class="feature-card">
-      <div class="feature-icon">🔬</div>
+      <div class="feature-icon"><i data-lucide="layers"></i></div>
       <div class="feature-title">@trace decorator</div>
       <div class="feature-desc">
         Wrap any sync or async function as a named span. Stage names like
@@ -1041,7 +1049,7 @@
       </div>
     </div>
     <div class="feature-card">
-      <div class="feature-icon">📊</div>
+      <div class="feature-icon"><i data-lucide="bar-chart-2"></i></div>
       <div class="feature-title">Dashboards</div>
       <div class="feature-desc">
         Rich table in terminal, interactive Textual TUI, or a browser dashboard
@@ -1049,7 +1057,7 @@
       </div>
     </div>
     <div class="feature-card">
-      <div class="feature-icon">🛡️</div>
+      <div class="feature-icon"><i data-lucide="shield"></i></div>
       <div class="feature-title">PII scrubbing</div>
       <div class="feature-desc">
         <code style="font-family:'JetBrains Mono',monospace;font-size:.85em">scrub_pii=True</code> redacts emails, SSNs, phone numbers,
@@ -1057,7 +1065,7 @@
       </div>
     </div>
     <div class="feature-card">
-      <div class="feature-icon">🔔</div>
+      <div class="feature-icon"><i data-lucide="bell"></i></div>
       <div class="feature-title">Budget alerts</div>
       <div class="feature-desc">
         Set daily or session cost and token budgets. Keeto fires a warning
@@ -1065,7 +1073,7 @@
       </div>
     </div>
     <div class="feature-card">
-      <div class="feature-icon">📤</div>
+      <div class="feature-icon"><i data-lucide="upload"></i></div>
       <div class="feature-title">Export everywhere</div>
       <div class="feature-desc">
         JSON, CSV, OpenTelemetry OTLP, LangSmith, MLflow, Prometheus — all
@@ -1073,7 +1081,7 @@
       </div>
     </div>
     <div class="feature-card">
-      <div class="feature-icon">🧠</div>
+      <div class="feature-icon"><i data-lucide="lightbulb"></i></div>
       <div class="feature-title">Recommendations</div>
       <div class="feature-desc">
         Rule-based analysis flags oversized prompts, repeated identical calls,
@@ -1081,7 +1089,7 @@
       </div>
     </div>
     <div class="feature-card">
-      <div class="feature-icon">🔄</div>
+      <div class="feature-icon"><i data-lucide="rotate-ccw"></i></div>
       <div class="feature-title">Replay</div>
       <div class="feature-desc">
         <code style="font-family:'JetBrains Mono',monospace;font-size:.85em">trace.replay()</code> re-sends the exact captured request
@@ -1184,6 +1192,8 @@
 </footer>
 
 <script>
+  lucide.createIcons();
+
   function switchTab(name) {
     document.querySelectorAll('.install-tab').forEach(t => t.classList.remove('active'));
     document.querySelectorAll('.install-cmd').forEach(c => c.classList.remove('active'));
