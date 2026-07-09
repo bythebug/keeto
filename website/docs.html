@@ -1,0 +1,1053 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Docs — Keeto</title>
+  <meta name="description" content="Complete documentation for Keeto — zero-config AI observability for Python." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:          #fdf8f4;
+      --bg-2:        #f7f0e8;
+      --bg-3:        #ede3d9;
+      --bg-4:        #e4d6c8;
+      --border:      #cfc0b0;
+      --border-dim:  #e4d9ce;
+      --orange:      #d4520a;
+      --orange-2:    #b84508;
+      --orange-glow: rgba(212,82,10,.09);
+      --text:        #1a1208;
+      --text-2:      #3d2710;
+      --text-muted:  #6b4f36;
+      --text-dim:    #9c7d62;
+      --code-bg:     #efe7de;
+      --code-border: #ddd0c3;
+      --sidebar-w:   260px;
+      --radius:      8px;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ────────────────── NAV ────────────────── */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 200;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 2rem;
+      height: 56px;
+      border-bottom: 1px solid var(--border-dim);
+      background: rgba(253,248,244,.94);
+      backdrop-filter: blur(16px);
+    }
+
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+      text-decoration: none;
+      color: var(--text);
+      font-weight: 700;
+      font-size: 1rem;
+      letter-spacing: -.02em;
+    }
+
+    .nav-logo .dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--orange);
+      box-shadow: 0 0 7px var(--orange);
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+      list-style: none;
+    }
+
+    .nav-links a {
+      text-decoration: none;
+      color: var(--text-muted);
+      font-size: .85rem;
+      font-weight: 500;
+      transition: color .15s;
+    }
+
+    .nav-links a:hover, .nav-links a.active { color: var(--text); }
+    .nav-links a.active { color: var(--orange); }
+
+    .nav-cta {
+      background: var(--orange) !important;
+      color: #fff !important;
+      padding: .35rem .9rem !important;
+      border-radius: 6px;
+      font-weight: 600 !important;
+    }
+
+    .nav-cta:hover { background: var(--orange-2) !important; }
+
+    /* ────────────────── LAYOUT ────────────────── */
+    .layout {
+      display: flex;
+      padding-top: 56px;
+      min-height: 100vh;
+    }
+
+    /* ────────────────── SIDEBAR ────────────────── */
+    .sidebar {
+      position: fixed;
+      top: 56px;
+      left: 0;
+      bottom: 0;
+      width: var(--sidebar-w);
+      overflow-y: auto;
+      border-right: 1px solid var(--border-dim);
+      background: var(--bg);
+      padding: 1.75rem 0 3rem;
+      scrollbar-width: thin;
+      scrollbar-color: var(--bg-3) transparent;
+    }
+
+    .sidebar::-webkit-scrollbar { width: 4px; }
+    .sidebar::-webkit-scrollbar-thumb { background: var(--bg-3); border-radius: 99px; }
+
+    .sidebar-group { margin-bottom: 1.75rem; }
+
+    .sidebar-group-label {
+      padding: 0 1.25rem .4rem;
+      font-size: .68rem;
+      font-weight: 700;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+    }
+
+    .sidebar-link {
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+      padding: .38rem 1.25rem;
+      font-size: .83rem;
+      color: var(--text-muted);
+      text-decoration: none;
+      border-left: 2px solid transparent;
+      transition: color .12s, border-color .12s, background .12s;
+    }
+
+    .sidebar-link:hover {
+      color: var(--text-2);
+      background: rgba(0,0,0,.04);
+    }
+
+    .sidebar-link.active {
+      color: var(--orange);
+      border-left-color: var(--orange);
+      background: var(--orange-glow);
+    }
+
+    /* ────────────────── CONTENT ────────────────── */
+    .content {
+      margin-left: var(--sidebar-w);
+      flex: 1;
+      padding: 3rem 3.5rem 6rem;
+      max-width: 860px;
+    }
+
+    /* Section anchors offset for fixed nav */
+    .doc-section {
+      padding-top: 2rem;
+      margin-bottom: .5rem;
+    }
+
+    .doc-section + .doc-section {
+      border-top: 1px solid var(--border-dim);
+      padding-top: 3rem;
+      margin-top: 3rem;
+    }
+
+    .doc-label {
+      font-size: .68rem;
+      font-weight: 700;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--orange);
+      margin-bottom: .5rem;
+    }
+
+    h1.doc-h1 {
+      font-size: 2rem;
+      font-weight: 800;
+      letter-spacing: -.03em;
+      margin-bottom: .6rem;
+    }
+
+    h2.doc-h2 {
+      font-size: 1.35rem;
+      font-weight: 700;
+      letter-spacing: -.02em;
+      margin: 2rem 0 .75rem;
+    }
+
+    h3.doc-h3 {
+      font-size: 1rem;
+      font-weight: 700;
+      margin: 1.5rem 0 .5rem;
+      color: var(--text-2);
+    }
+
+    .doc-lead {
+      font-size: 1rem;
+      color: var(--text-muted);
+      line-height: 1.7;
+      margin-bottom: 1.5rem;
+      max-width: 620px;
+    }
+
+    p {
+      font-size: .9rem;
+      color: var(--text-muted);
+      line-height: 1.75;
+      margin-bottom: 1rem;
+    }
+
+    p code, li code, td code {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: .8em;
+      background: var(--bg-3);
+      color: var(--orange);
+      padding: .1em .35em;
+      border-radius: 4px;
+      border: 1px solid var(--border-dim);
+    }
+
+    ul, ol {
+      padding-left: 1.4rem;
+      margin-bottom: 1rem;
+    }
+
+    li {
+      font-size: .88rem;
+      color: var(--text-muted);
+      line-height: 1.75;
+      margin-bottom: .2rem;
+    }
+
+    /* ────────────────── CODE BLOCKS ────────────────── */
+    .code-window {
+      background: var(--code-bg);
+      border: 1px solid var(--code-border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      margin: 1.25rem 0;
+    }
+
+    .code-titlebar {
+      display: flex;
+      align-items: center;
+      gap: .45rem;
+      padding: .6rem 1rem;
+      border-bottom: 1px solid var(--code-border);
+      background: rgba(0,0,0,.03);
+    }
+
+    .code-dot { width: 10px; height: 10px; border-radius: 50%; }
+    .code-dot.red    { background: #ff5f57; }
+    .code-dot.yellow { background: #ffbd2e; }
+    .code-dot.green  { background: #28ca41; }
+
+    .code-filename {
+      margin-left: .4rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: .72rem;
+      color: var(--text-dim);
+    }
+
+    .code-body {
+      padding: 1.25rem 1.4rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: .8rem;
+      line-height: 1.85;
+      overflow-x: auto;
+      white-space: pre;
+    }
+
+    .kw  { color: #b84508; }
+    .fn  { color: #a16207; }
+    .str { color: #166534; }
+    .cmt { color: var(--text-dim); font-style: italic; }
+    .op  { color: var(--text-muted); }
+    .cls { color: #0e7490; }
+    .num { color: #7c3aed; }
+    .dec { color: #6d28d9; }
+
+    /* ────────────────── TABLES ────────────────── */
+    .doc-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1.25rem 0;
+      font-size: .83rem;
+    }
+
+    .doc-table th {
+      text-align: left;
+      padding: .6rem .9rem;
+      font-size: .72rem;
+      font-weight: 700;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      border-bottom: 1px solid var(--border-dim);
+    }
+
+    .doc-table td {
+      padding: .65rem .9rem;
+      border-bottom: 1px solid var(--border-dim);
+      color: var(--text-muted);
+      vertical-align: top;
+      line-height: 1.6;
+    }
+
+    .doc-table tr:hover td { background: rgba(0,0,0,.03); }
+
+    .doc-table td:first-child {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: .78rem;
+      color: var(--orange);
+      white-space: nowrap;
+    }
+
+    /* ────────────────── CALLOUTS ────────────────── */
+    .callout {
+      display: flex;
+      gap: .75rem;
+      padding: 1rem 1.25rem;
+      border-radius: var(--radius);
+      margin: 1.25rem 0;
+      font-size: .85rem;
+      line-height: 1.65;
+    }
+
+    .callout-tip {
+      background: rgba(212,82,10,.06);
+      border: 1px solid rgba(212,82,10,.18);
+      color: var(--text-muted);
+    }
+
+    .callout-icon { flex-shrink: 0; font-size: 1rem; margin-top: .05rem; }
+
+    /* ────────────────── STEP LIST ────────────────── */
+    .steps { display: flex; flex-direction: column; gap: 1.25rem; margin: 1.5rem 0; }
+
+    .step {
+      display: flex;
+      gap: 1rem;
+      align-items: flex-start;
+    }
+
+    .step-num {
+      flex-shrink: 0;
+      width: 26px; height: 26px;
+      border-radius: 50%;
+      background: var(--orange-glow);
+      border: 1px solid rgba(212,82,10,.25);
+      color: var(--orange);
+      font-size: .75rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: .1rem;
+    }
+
+    .step-content { flex: 1; }
+    .step-title { font-weight: 600; font-size: .9rem; margin-bottom: .25rem; color: var(--text-2); }
+    .step-desc { font-size: .83rem; color: var(--text-muted); line-height: 1.65; }
+
+    /* ────────────────── BADGE ────────────────── */
+    .badge {
+      display: inline-block;
+      font-size: .7rem;
+      font-weight: 600;
+      padding: .15rem .5rem;
+      border-radius: 4px;
+      vertical-align: middle;
+      margin-left: .35rem;
+    }
+
+    .badge-orange { background: rgba(212,82,10,.1); color: var(--orange); border: 1px solid rgba(212,82,10,.22); }
+    .badge-dim { background: var(--bg-3); color: var(--text-dim); border: 1px solid var(--border-dim); }
+
+    /* ────────────────── INTEGRATION GRID ────────────────── */
+    .int-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: .6rem;
+      margin: 1.25rem 0;
+    }
+
+    .int-card {
+      background: var(--bg-2);
+      border: 1px solid var(--border-dim);
+      border-radius: var(--radius);
+      padding: .9rem 1.1rem;
+      transition: border-color .15s;
+    }
+
+    .int-card:hover { border-color: var(--border); }
+
+    .int-card-name {
+      font-size: .88rem;
+      font-weight: 600;
+      color: var(--text-2);
+      margin-bottom: .25rem;
+    }
+
+    .int-card-desc {
+      font-size: .78rem;
+      color: var(--text-dim);
+      line-height: 1.55;
+    }
+
+    /* ────────────────── RESPONSIVE ────────────────── */
+    @media (max-width: 900px) {
+      .sidebar { display: none; }
+      .content { margin-left: 0; padding: 2rem 1.25rem 4rem; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="index.html" class="nav-logo">
+    <span class="dot"></span>
+    keeto
+  </a>
+  <ul class="nav-links">
+    <li><a href="index.html#how-it-works">How it works</a></li>
+    <li><a href="index.html#features">Features</a></li>
+    <li><a href="docs.html" class="active">Docs</a></li>
+    <li><a href="https://github.com/bythebug/keeto" target="_blank">GitHub</a></li>
+    <li><a href="https://pypi.org/project/keeto" target="_blank" class="nav-cta">pip install keeto</a></li>
+  </ul>
+</nav>
+
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-group">
+      <div class="sidebar-group-label">Getting Started</div>
+      <a href="#installation" class="sidebar-link active">Installation</a>
+      <a href="#quickstart" class="sidebar-link">Quickstart</a>
+    </div>
+    <div class="sidebar-group">
+      <div class="sidebar-group-label">Core API</div>
+      <a href="#monitor-start" class="sidebar-link">monitor.start()</a>
+      <a href="#trace-decorator" class="sidebar-link">@trace decorator</a>
+      <a href="#monitor-span" class="sidebar-link">monitor.span()</a>
+      <a href="#pipeline-breakdown" class="sidebar-link">pipeline_breakdown()</a>
+      <a href="#dashboard" class="sidebar-link">dashboard()</a>
+      <a href="#export" class="sidebar-link">export()</a>
+      <a href="#recommendations" class="sidebar-link">recommendations()</a>
+    </div>
+    <div class="sidebar-group">
+      <div class="sidebar-group-label">Configuration</div>
+      <a href="#monitor-options" class="sidebar-link">Monitor options</a>
+      <a href="#storage" class="sidebar-link">Storage backends</a>
+      <a href="#budgets" class="sidebar-link">Budget alerts</a>
+      <a href="#pii" class="sidebar-link">PII scrubbing</a>
+      <a href="#sampling" class="sidebar-link">Sampling</a>
+    </div>
+    <div class="sidebar-group">
+      <div class="sidebar-group-label">Integrations</div>
+      <a href="#integrations-auto" class="sidebar-link">Auto-detected SDKs</a>
+      <a href="#integrations-custom" class="sidebar-link">Custom pipelines</a>
+    </div>
+    <div class="sidebar-group">
+      <div class="sidebar-group-label">Exporters</div>
+      <a href="#exporters" class="sidebar-link">JSON / CSV</a>
+      <a href="#otel" class="sidebar-link">OpenTelemetry</a>
+      <a href="#langsmith" class="sidebar-link">LangSmith</a>
+    </div>
+    <div class="sidebar-group">
+      <div class="sidebar-group-label">CLI</div>
+      <a href="#cli" class="sidebar-link">keeto CLI</a>
+    </div>
+  </aside>
+
+  <!-- CONTENT -->
+  <main class="content">
+
+    <!-- ── INSTALLATION ── -->
+    <div class="doc-section" id="installation">
+      <div class="doc-label">Getting Started</div>
+      <h1 class="doc-h1">Documentation</h1>
+      <p class="doc-lead">
+        Keeto is a zero-config AI observability library for Python. It intercepts
+        every LLM call your app makes — automatically — and gives you latency,
+        token counts, cost, and dashboards with two lines of code.
+      </p>
+
+      <h2 class="doc-h2">Installation</h2>
+      <p>Requires Python 3.11+. The core package has no heavy dependencies.</p>
+
+      <div class="code-window">
+        <div class="code-titlebar"><span class="code-dot red"></span><span class="code-dot yellow"></span><span class="code-dot green"></span><span class="code-filename">terminal</span></div>
+        <div class="code-body"><span class="cmt"># core</span>
+pip install keeto
+
+<span class="cmt"># with SQLite persistence + interactive TUI</span>
+pip install <span class="str">"keeto[sqlite,tui]"</span>
+
+<span class="cmt"># everything</span>
+pip install <span class="str">"keeto[sqlite,tui,web,otel]"</span></div>
+      </div>
+
+      <table class="doc-table">
+        <thead><tr><th>Extra</th><th>What it adds</th></tr></thead>
+        <tbody>
+          <tr><td>keeto[sqlite]</td><td>Persistent SQLite storage via aiosqlite — traces survive process restarts</td></tr>
+          <tr><td>keeto[tui]</td><td>Interactive Textual terminal dashboard</td></tr>
+          <tr><td>keeto[web]</td><td>Browser dashboard (FastAPI + HTMX + SSE)</td></tr>
+          <tr><td>keeto[otel]</td><td>OpenTelemetry OTLP exporter for Jaeger, Tempo, etc.</td></tr>
+          <tr><td>keeto[postgres]</td><td>PostgreSQL storage backend via asyncpg</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- ── QUICKSTART ── -->
+    <div class="doc-section" id="quickstart">
+      <h2 class="doc-h2">Quickstart</h2>
+      <p>Two lines instrument your entire application. No wrappers, no base classes, no config files.</p>
+
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-content">
+            <div class="step-title">Start the monitor</div>
+            <div class="step-desc">Call <code>monitor.start()</code> before any AI calls. Keeto auto-detects installed SDKs.</div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-content">
+            <div class="step-title">Use your AI SDK normally</div>
+            <div class="step-desc">No changes to existing code. Every call is captured transparently.</div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-content">
+            <div class="step-title">View the dashboard</div>
+            <div class="step-desc">Call <code>monitor.dashboard()</code> to see latency, tokens, cost, and errors.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="code-window">
+        <div class="code-titlebar"><span class="code-dot red"></span><span class="code-dot yellow"></span><span class="code-dot green"></span><span class="code-filename">app.py</span></div>
+        <div class="code-body"><span class="kw">from</span> <span class="cls">keeto</span> <span class="kw">import</span> <span class="fn">monitor</span>
+<span class="fn">monitor</span>.<span class="fn">start</span>()  <span class="cmt"># keeto: loaded plugins → openai</span>
+
+<span class="kw">import</span> <span class="cls">openai</span>
+<span class="fn">client</span> = <span class="cls">openai</span>.<span class="cls">OpenAI</span>()
+<span class="fn">response</span> = <span class="fn">client</span>.<span class="fn">chat</span>.<span class="fn">completions</span>.<span class="fn">create</span>(
+    <span class="fn">model</span>=<span class="str">"gpt-4o-mini"</span>,
+    <span class="fn">messages</span>=[{<span class="str">"role"</span>: <span class="str">"user"</span>, <span class="str">"content"</span>: <span class="str">"What is the capital of France?"</span>}],
+)
+<span class="fn">print</span>(<span class="fn">response</span>.<span class="fn">choices</span>[<span class="num">0</span>].<span class="fn">message</span>.<span class="fn">content</span>)
+
+<span class="fn">monitor</span>.<span class="fn">dashboard</span>()  <span class="cmt"># → shows latency, tokens, cost</span></div>
+      </div>
+    </div>
+
+    <!-- ── MONITOR.START ── -->
+    <div class="doc-section" id="monitor-start">
+      <div class="doc-label">Core API</div>
+      <h2 class="doc-h2">monitor.start()</h2>
+      <p>
+        Starts the background pipeline and installs all plugins. Safe to call multiple
+        times — subsequent calls are no-ops. Raises nothing; if a plugin fails to load,
+        it is silently skipped.
+      </p>
+
+      <div class="code-window">
+        <div class="code-titlebar"><span class="code-dot red"></span><span class="code-dot yellow"></span><span class="code-dot green"></span></div>
+        <div class="code-body"><span class="kw">from</span> <span class="cls">keeto</span> <span class="kw">import</span> <span class="fn">monitor</span>
+<span class="fn">monitor</span>.<span class="fn">start</span>()  <span class="cmt"># auto=True by default</span>
+
+<span class="cmt"># or via context manager (auto-stops on exit)</span>
+<span class="kw">with</span> <span class="fn">monitor</span>:
+    <span class="fn">response</span> = <span class="kw">await</span> <span class="fn">client</span>.<span class="fn">chat</span>.<span class="fn">completions</span>.<span class="fn">create</span>(...)</div>
+      </div>
+
+      <div class="callout callout-tip">
+        <span class="callout-icon">💡</span>
+        <div>Set <code>KEETO_DISABLED=1</code> in the environment to make <code>monitor.start()</code> a no-op — useful for tests and CI where you don't want tracing overhead.</div>
+      </div>
+    </div>
+
+    <!-- ── @TRACE ── -->
+    <div class="doc-section" id="trace-decorator">
+      <h2 class="doc-h2">@trace decorator</h2>
+      <p>
+        Wraps any sync or async function as a named, timed span. Common stage names
+        are auto-mapped to the right <code>SpanKind</code> — no explicit kind needed.
+      </p>
+
+      <div class="code-window">
+        <div class="code-titlebar"><span class="code-dot red"></span><span class="code-dot yellow"></span><span class="code-dot green"></span><span class="code-filename">pipeline.py</span></div>
+        <div class="code-body"><span class="kw">from</span> <span class="cls">keeto</span> <span class="kw">import</span> <span class="fn">monitor</span>, <span class="fn">trace</span>
+<span class="fn">monitor</span>.<span class="fn">start</span>()
+
+<span class="dec">@trace</span>(<span class="str">"embedding"</span>)          <span class="cmt"># → SpanKind.EMBEDDING</span>
+<span class="kw">def</span> <span class="fn">embed</span>(<span class="fn">text</span>: <span class="cls">str</span>) -> <span class="cls">list</span>[<span class="cls">float</span>]:
+    ...
+
+<span class="dec">@trace</span>(<span class="str">"retrieval"</span>)          <span class="cmt"># → SpanKind.RETRIEVAL</span>
+<span class="kw">async def</span> <span class="fn">search</span>(<span class="fn">vec</span>: <span class="cls">list</span>) -> <span class="cls">list</span>[<span class="cls">str</span>]:
+    ...
+
+<span class="dec">@trace</span>(<span class="str">"llm"</span>)               <span class="cmt"># → SpanKind.LLM</span>
+<span class="kw">def</span> <span class="fn">generate</span>(<span class="fn">docs</span>: <span class="cls">list</span>) -> <span class="cls">str</span>:
+    ...
+
+<span class="cmt"># also available as monitor.trace() for custom Monitor instances</span>
+<span class="dec">@monitor</span>.<span class="fn">trace</span>(<span class="str">"rerank"</span>, <span class="fn">kind</span>=<span class="cls">SpanKind</span>.<span class="cls">RETRIEVAL</span>)
+<span class="kw">def</span> <span class="fn">rerank</span>(<span class="fn">docs</span>): ...</div>
+      </div>
+
+      <h3 class="doc-h3">Auto kind mapping</h3>
+      <table class="doc-table">
+        <thead><tr><th>Name pattern</th><th>SpanKind</th></tr></thead>
+        <tbody>
+          <tr><td>embedding, embed, embeddings</td><td>EMBEDDING</td></tr>
+          <tr><td>retrieval, retrieve, search, vector-search, rerank</td><td>RETRIEVAL</td></tr>
+          <tr><td>llm, generate, completion, inference, chat</td><td>LLM</td></tr>
+          <tr><td>tool, tool-call</td><td>TOOL</td></tr>
+          <tr><td>chain, pipeline, rag</td><td>CHAIN</td></tr>
+          <tr><td>agent</td><td>AGENT</td></tr>
+          <tr><td>anything else</td><td>CUSTOM</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- ── MONITOR.SPAN ── -->
+    <div class="doc-section" id="monitor-span">
+      <h2 class="doc-h2">monitor.span()</h2>
+      <p>
+        Context manager for manual span creation. Use it to group multiple
+        <code>@trace</code>-decorated stages under a named root span.
+      </p>
+
+      <div class="code-window">
+        <div class="code-titlebar"><span class="code-dot red"></span><span class="code-dot yellow"></span><span class="code-dot green"></span></div>
+        <div class="code-body"><span class="kw">with</span> <span class="fn">monitor</span>.<span class="fn">span</span>(<span class="str">"rag-pipeline"</span>) <span class="kw">as</span> <span class="fn">ctx</span>:
+    <span class="fn">ctx</span>.<span class="fn">set_attribute</span>(<span class="str">"query"</span>, <span class="fn">query</span>)
+    <span class="fn">vecs</span>  = <span class="fn">embed</span>(<span class="fn">query</span>)
+    <span class="fn">docs</span>  = <span class="kw">await</span> <span class="fn">search</span>(<span class="fn">vecs</span>)
+    <span class="fn">answer</span> = <span class="fn">generate</span>(<span class="fn">docs</span>)
+
+<span class="cmt"># produces: rag-pipeline → embedding → retrieval → llm</span></div>
+      </div>
+    </div>
+
+    <!-- ── PIPELINE BREAKDOWN ── -->
+    <div class="doc-section" id="pipeline-breakdown">
+      <h2 class="doc-h2">monitor.pipeline_breakdown()</h2>
+      <p>
+        Prints a Rich latency table for the most recent trace — or pass
+        <code>trace=</code> to inspect any historical one.
+        Shows each stage in start-time order, a total row, and calls out the slowest stage.
+      </p>
+
+      <div class="code-window">
+        <div class="code-titlebar"><span class="code-dot red"></span><span class="code-dot yellow"></span><span class="code-dot green"></span></div>
+        <div class="code-body"><span class="fn">monitor</span>.<span class="fn">pipeline_breakdown</span>()          <span class="cmt"># most recent trace</span>
+
+<span class="fn">traces</span> = <span class="cls">list</span>(<span class="fn">monitor</span>.<span class="fn">traces</span>)
+<span class="fn">monitor</span>.<span class="fn">pipeline_breakdown</span>(<span class="fn">trace</span>=<span class="fn">traces</span>[<span class="num">-2</span>])  <span class="cmt"># any specific trace</span></div>
+      </div>
+
+      <div class="code-window">
+        <div class="code-titlebar"><span class="code-dot red"></span><span class="code-dot yellow"></span><span class="code-dot green"></span><span class="code-filename">output</span></div>
+        <div class="code-body"><span class="fn">Trace a3f8bc12</span>
+
+<span class="str">embedding       </span>  <span class="num">18</span> ms
+<span class="str">retrieval       </span>  <span class="num">12</span> ms
+<span class="str">rerank          </span>  <span class="num">65</span> ms
+<span class="str">llm             </span><span class="num">1100</span> ms
+<span class="op">──────────────────────</span>
+Total           <span class="num">1195</span> ms
+
+<span class="kw">Slowest stage:</span> llm (<span class="num">92.1</span>%)</div>
+      </div>
+    </div>
+
+    <!-- ── DASHBOARD ── -->
+    <div class="doc-section" id="dashboard">
+      <h2 class="doc-h2">monitor.dashboard()</h2>
+      <p>Three dashboard modes, each requiring different extras.</p>
+
+      <div class="code-window">
+        <div class="code-titlebar"><span class="code-dot red"></span><span class="code-dot yellow"></span><span class="code-dot green"></span></div>
+        <div class="code-body"><span class="fn">monitor</span>.<span class="fn">dashboard</span>()           <span class="cmt"># Rich table — no extra deps</span>
+<span class="fn">monitor</span>.<span class="fn">dashboard</span>(<span class="str">"tui"</span>)     <span class="cmt"># Textual TUI  — keeto[tui]</span>
+<span class="fn">monitor</span>.<span class="fn">dashboard</span>(<span class="str">"web"</span>)     <span class="cmt"># browser      — keeto[web]</span></div>
+      </div>
+
+      <table class="doc-table">
+        <thead><tr><th>Mode</th><th>Extra</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td>"rich"</td><td><em>none</em></td><td>Prints a summary table with cost, tokens, latency P50/P95 to the terminal</td></tr>
+          <tr><td>"tui"</td><td>keeto[tui]</td><td>Interactive Textual app — trace list, waterfall timeline, cost panel, live refresh</td></tr>
+          <tr><td>"web"</td><td>keeto[web]</td><td>Auto-opens browser; FastAPI + HTMX + SSE for real-time updates</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- ── EXPORT ── -->
+    <div class="doc-section" id="export">
+      <h2 class="doc-h2">monitor.export()</h2>
+      <p>Export captured traces to multiple formats. Format is inferred from the file extension when a path is given.</p>
+
+      <div class="code-window">
+        <div class="code-titlebar"><span class="code-dot red"></span><span class="code-dot yellow"></span><span class="code-dot green"></span></div>
+        <div class="code-body"><span class="fn">monitor</span>.<span class="fn">export</span>(<span class="str">"traces.json"</span>)
+<span class="fn">monitor</span>.<span class="fn">export</span>(<span class="str">"traces.csv"</span>)
+<span class="fn">monitor</span>.<span class="fn">export</span>(<span class="fn">format</span>=<span class="str">"otel"</span>, <span class="fn">endpoint</span>=<span class="str">"http://jaeger:4317"</span>)
+<span class="fn">monitor</span>.<span class="fn">export</span>(<span class="fn">format</span>=<span class="str">"langsmith"</span>, <span class="fn">project_name</span>=<span class="str">"my-project"</span>)
+<span class="fn">monitor</span>.<span class="fn">export</span>(<span class="fn">format</span>=<span class="str">"mlflow"</span>, <span class="fn">experiment_name</span>=<span class="str">"prod"</span>)
+
+<span class="cmt"># filter by time range</span>
+<span class="fn">monitor</span>.<span class="fn">export</span>(<span class="str">"traces.json"</span>, <span class="fn">since</span>=<span class="str">"2024-01-01"</span>, <span class="fn">until</span>=<span class="str">"2024-01-31"</span>)</div>
+      </div>
+    </div>
+
+    <!-- ── RECOMMENDATIONS ── -->
+    <div class="doc-section" id="recommendations">
+      <h2 class="doc-h2">monitor.recommendations()</h2>
+      <p>Returns a <code>RecommendationsReport</code> with rule-based findings across all captured traces.</p>
+
+      <div class="code-window">
+        <div class="code-titlebar"><span class="code-dot red"></span><span class="code-dot yellow"></span><span class="code-dot green"></span></div>
+        <div class="code-body"><span class="fn">report</span> = <span class="fn">monitor</span>.<span class="fn">recommendations</span>()
+<span class="fn">print</span>(<span class="fn">report</span>)
+<span class="cmt"># keeto recommendations:</span>
+<span class="cmt">#   [!] [prompt-size] Prompt exceeds 75% of context window on 3 traces</span>
+<span class="cmt">#   [i] [cache-candidate] Identical prompt sent 5× — consider caching</span>
+<span class="cmt">#   [i] [model-switch] gpt-4o tasks could use gpt-4o-mini at 10× lower cost</span></div>
+      </div>
+
+      <p>Rules that fire:</p>
+      <ul>
+        <li><strong>prompt-size</strong> — prompt exceeds 75% of the model's context window</li>
+        <li><strong>cache-candidate</strong> — identical prompt sent more than twice in a session</li>
+        <li><strong>model-switch</strong> — task pattern suggests a cheaper model is viable</li>
+        <li><strong>context-waste</strong> — large system prompt repeated on every call</li>
+        <li><strong>retry-loop</strong> — same prompt retried more than 3 times</li>
+        <li><strong>cost-anomaly</strong> — span cost more than 2σ above session mean</li>
+      </ul>
+    </div>
+
+    <!-- ── MONITOR OPTIONS ── -->
+    <div class="doc-section" id="monitor-options">
+      <div class="doc-label">Configuration</div>
+      <h2 class="doc-h2">Monitor options</h2>
+
+      <div class="code-window">
+        <div class="code-titlebar"><span class="code-dot red"></span><span class="code-dot yellow"></span><span class="code-dot green"></span></div>
+        <div class="code-body"><span class="kw">from</span> <span class="cls">keeto</span> <span class="kw">import</span> <span class="cls">Monitor</span>
+<span class="kw">from</span> <span class="cls">keeto.storage.sqlite</span> <span class="kw">import</span> <span class="cls">SQLiteStorage</span>
+
+<span class="fn">monitor</span> = <span class="cls">Monitor</span>(
+    <span class="fn">storage</span>=<span class="cls">SQLiteStorage</span>(<span class="str">"./keeto.db"</span>),
+    <span class="fn">sample_rate</span>=<span class="num">1.0</span>,
+    <span class="fn">scrub_pii</span>=<span class="cls">True</span>,
+    <span class="fn">store_prompts</span>=<span class="cls">True</span>,
+    <span class="fn">auto</span>=<span class="cls">True</span>,
+)</div>
+      </div>
+
+      <table class="doc-table">
+        <thead><tr><th>Parameter</th><th>Default</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td>storage</td><td>MemoryStorage()</td><td>Storage backend — MemoryStorage, SQLiteStorage, or PostgresStorage</td></tr>
+          <tr><td>sample_rate</td><td>1.0</td><td>Fraction of requests to capture (0.0–1.0). Errors always captured.</td></tr>
+          <tr><td>scrub_pii</td><td>False</td><td>Redact PII patterns before storage</td></tr>
+          <tr><td>pii_patterns</td><td>None</td><td>Extra regex patterns to redact (requires scrub_pii=True)</td></tr>
+          <tr><td>store_prompts</td><td>True</td><td>Set False to store metadata only (no prompt/response content)</td></tr>
+          <tr><td>auto</td><td>True</td><td>Auto-detect and load plugins for installed SDKs</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- ── STORAGE ── -->
+    <div class="doc-section" id="storage">
+      <h2 class="doc-h2">Storage backends</h2>
+
+      <h3 class="doc-h3">MemoryStorage <span class="badge badge-dim">default</span></h3>
+      <p>Ring buffer. Zero dependencies. Traces lost on process exit. Default max 1000 traces.</p>
+      <div class="code-window">
+        <div class="code-titlebar"><span class="code-dot red"></span><span class="code-dot yellow"></span><span class="code-dot green"></span></div>
+        <div class="code-body"><span class="kw">from</span> <span class="cls">keeto.storage.memory</span> <span class="kw">import</span> <span class="cls">MemoryStorage</span>
+<span class="fn">monitor</span> = <span class="cls">Monitor</span>(<span class="fn">storage</span>=<span class="cls">MemoryStorage</span>(<span class="fn">max_traces</span>=<span class="num">500</span>))</div>
+      </div>
+
+      <h3 class="doc-h3">SQLiteStorage <span class="badge badge-orange">keeto[sqlite]</span></h3>
+      <p>Persists across restarts. Auto-migrates schema on first connect. WAL mode for performance.</p>
+      <div class="code-window">
+        <div class="code-titlebar"><span class="code-dot red"></span><span class="code-dot yellow"></span><span class="code-dot green"></span></div>
+        <div class="code-body"><span class="kw">from</span> <span class="cls">keeto.storage.sqlite</span> <span class="kw">import</span> <span class="cls">SQLiteStorage</span>
+<span class="fn">monitor</span> = <span class="cls">Monitor</span>(<span class="fn">storage</span>=<span class="cls">SQLiteStorage</span>(<span class="str">"./keeto.db"</span>))</div>
+      </div>
+
+      <h3 class="doc-h3">PostgresStorage <span class="badge badge-orange">keeto[postgres]</span></h3>
+      <p>asyncpg connection pool. Date-partitioned for performance. For team/production deployments.</p>
+      <div class="code-window">
+        <div class="code-titlebar"><span class="code-dot red"></span><span class="code-dot yellow"></span><span class="code-dot green"></span></div>
+        <div class="code-body"><span class="kw">from</span> <span class="cls">keeto.storage.postgres</span> <span class="kw">import</span> <span class="cls">PostgresStorage</span>
+<span class="fn">monitor</span> = <span class="cls">Monitor</span>(
+    <span class="fn">storage</span>=<span class="cls">PostgresStorage</span>(<span class="str">"postgresql://user:pass@localhost/keeto"</span>)
+)</div>
+      </div>
+    </div>
+
+    <!-- ── BUDGETS ── -->
+    <div class="doc-section" id="budgets">
+      <h2 class="doc-h2">Budget alerts</h2>
+      <p>Set cost or token thresholds. Keeto logs a warning (and fires a webhook if configured) the moment a budget is crossed.</p>
+
+      <div class="code-window">
+        <div class="code-titlebar"><span class="code-dot red"></span><span class="code-dot yellow"></span><span class="code-dot green"></span></div>
+        <div class="code-body"><span class="fn">monitor</span>.<span class="fn">set_budget</span>(
+    <span class="fn">daily_usd</span>=<span class="num">10.0</span>,
+    <span class="fn">session_usd</span>=<span class="num">2.0</span>,
+)
+
+<span class="fn">monitor</span>.<span class="fn">set_token_budget</span>(
+    <span class="fn">daily</span>=<span class="num">500_000</span>,
+    <span class="fn">monthly</span>=<span class="num">1_000_000</span>,
+)
+
+<span class="cmt"># optional: webhook on budget breach</span>
+<span class="fn">monitor</span>.<span class="fn">set_webhook</span>(
+    <span class="fn">url</span>=<span class="str">"https://hooks.slack.com/..."</span>,
+    <span class="fn">on_budget</span>=<span class="cls">True</span>,
+    <span class="fn">on_error</span>=<span class="cls">True</span>,
+)</div>
+      </div>
+    </div>
+
+    <!-- ── PII ── -->
+    <div class="doc-section" id="pii">
+      <h2 class="doc-h2">PII scrubbing</h2>
+      <p>Enable <code>scrub_pii=True</code> to redact sensitive data before it touches storage. Patterns applied to all span attributes including prompt and response content.</p>
+
+      <table class="doc-table">
+        <thead><tr><th>Pattern</th><th>Replaced with</th></tr></thead>
+        <tbody>
+          <tr><td>Email addresses</td><td>[EMAIL]</td></tr>
+          <tr><td>US phone numbers</td><td>[PHONE]</td></tr>
+          <tr><td>Social Security Numbers</td><td>[SSN]</td></tr>
+          <tr><td>16-digit credit card numbers</td><td>[CARD]</td></tr>
+        </tbody>
+      </table>
+
+      <div class="code-window">
+        <div class="code-titlebar"><span class="code-dot red"></span><span class="code-dot yellow"></span><span class="code-dot green"></span></div>
+        <div class="code-body"><span class="fn">monitor</span> = <span class="cls">Monitor</span>(
+    <span class="fn">scrub_pii</span>=<span class="cls">True</span>,
+    <span class="fn">pii_patterns</span>=[<span class="str">r"\bACCT-\d{8}\b"</span>],  <span class="cmt"># custom → [REDACTED]</span>
+)</div>
+      </div>
+    </div>
+
+    <!-- ── SAMPLING ── -->
+    <div class="doc-section" id="sampling">
+      <h2 class="doc-h2">Sampling</h2>
+      <p>For high-traffic services, capture a fraction of requests. Error spans are always captured regardless of the sample rate.</p>
+
+      <div class="code-window">
+        <div class="code-titlebar"><span class="code-dot red"></span><span class="code-dot yellow"></span><span class="code-dot green"></span></div>
+        <div class="code-body"><span class="fn">monitor</span> = <span class="cls">Monitor</span>(<span class="fn">sample_rate</span>=<span class="num">0.1</span>)  <span class="cmt"># capture 10%</span></div>
+      </div>
+    </div>
+
+    <!-- ── INTEGRATIONS AUTO ── -->
+    <div class="doc-section" id="integrations-auto">
+      <div class="doc-label">Integrations</div>
+      <h2 class="doc-h2">Auto-detected SDKs</h2>
+      <p>
+        Keeto wraps the httpx transport used by every major AI SDK.
+        Install the SDK, call <code>monitor.start()</code>, and every request is captured.
+      </p>
+
+      <div class="int-grid">
+        <div class="int-card"><div class="int-card-name">OpenAI</div><div class="int-card-desc">Chat, embeddings, tool calls, streaming. Token counts and cost computed automatically.</div></div>
+        <div class="int-card"><div class="int-card-name">Anthropic</div><div class="int-card-desc">Messages API, tool use, streaming. Cached token tracking supported.</div></div>
+        <div class="int-card"><div class="int-card-name">LangChain</div><div class="int-card-desc">Auto-registered as a global callback handler. Captures LLM, chain, and tool spans.</div></div>
+        <div class="int-card"><div class="int-card-name">LlamaIndex</div><div class="int-card-desc">Hooks into the LlamaIndex instrumentation dispatcher for LLM and embedding events.</div></div>
+        <div class="int-card"><div class="int-card-name">LiteLLM</div><div class="int-card-desc">Appended to litellm.callbacks. Uses LiteLLM's own cost calculation when available.</div></div>
+        <div class="int-card"><div class="int-card-name">Google Gemini</div><div class="int-card-desc">Patches generate_content and generate_content_async on GenerativeModel.</div></div>
+        <div class="int-card"><div class="int-card-name">Ollama</div><div class="int-card-desc">Patches ollama.chat, ollama.generate, and AsyncClient. Cost is $0 (local inference).</div></div>
+        <div class="int-card"><div class="int-card-name">OpenAI Agents SDK</div><div class="int-card-desc">Registers a TracingProcessor to capture agent, LLM, and function-call spans.</div></div>
+        <div class="int-card"><div class="int-card-name">PydanticAI</div><div class="int-card-desc">Wraps Agent.run / Agent.run_sync with an AGENT span. Child LLM spans nest underneath.</div></div>
+        <div class="int-card"><div class="int-card-name">FastAPI</div><div class="int-card-desc">ASGI middleware that creates a trace per HTTP request so AI calls are grouped by request.</div></div>
+        <div class="int-card"><div class="int-card-name">vLLM</div><div class="int-card-desc">Uses OpenAI SDK pointed at vLLM's base_url — captured by the OpenAI plugin automatically.</div></div>
+      </div>
+    </div>
+
+    <!-- ── CUSTOM PIPELINES ── -->
+    <div class="doc-section" id="integrations-custom">
+      <h2 class="doc-h2">Custom pipelines</h2>
+      <p>
+        Use <code>@trace</code> to instrument any Python function — sync or async.
+        Nest decorated stages inside <code>monitor.span()</code> to produce a
+        parent-child trace tree visible in the dashboard as a waterfall.
+      </p>
+
+      <div class="code-window">
+        <div class="code-titlebar"><span class="code-dot red"></span><span class="code-dot yellow"></span><span class="code-dot green"></span><span class="code-filename">rag.py</span></div>
+        <div class="code-body"><span class="kw">from</span> <span class="cls">keeto</span> <span class="kw">import</span> <span class="fn">monitor</span>, <span class="fn">trace</span>
+<span class="fn">monitor</span>.<span class="fn">start</span>()
+
+<span class="dec">@trace</span>(<span class="str">"embedding"</span>)
+<span class="kw">def</span> <span class="fn">embed</span>(<span class="fn">text</span>): ...
+
+<span class="dec">@trace</span>(<span class="str">"retrieval"</span>)
+<span class="kw">async def</span> <span class="fn">search</span>(<span class="fn">vec</span>): ...
+
+<span class="dec">@trace</span>(<span class="str">"rerank"</span>)
+<span class="kw">def</span> <span class="fn">rerank</span>(<span class="fn">docs</span>, <span class="fn">query</span>): ...
+
+<span class="dec">@trace</span>(<span class="str">"llm"</span>)
+<span class="kw">def</span> <span class="fn">generate</span>(<span class="fn">docs</span>): ...
+
+<span class="kw">async def</span> <span class="fn">rag</span>(<span class="fn">query</span>: <span class="cls">str</span>) -> <span class="cls">str</span>:
+    <span class="kw">with</span> <span class="fn">monitor</span>.<span class="fn">span</span>(<span class="str">"rag-pipeline"</span>) <span class="kw">as</span> <span class="fn">ctx</span>:
+        <span class="fn">ctx</span>.<span class="fn">set_attribute</span>(<span class="str">"query"</span>, <span class="fn">query</span>)
+        <span class="fn">vecs</span> = <span class="fn">embed</span>(<span class="fn">query</span>)
+        <span class="fn">docs</span> = <span class="kw">await</span> <span class="fn">search</span>(<span class="fn">vecs</span>)
+        <span class="fn">docs</span> = <span class="fn">rerank</span>(<span class="fn">docs</span>, <span class="fn">query</span>)
+        <span class="kw">return</span> <span class="fn">generate</span>(<span class="fn">docs</span>)</div>
+      </div>
+    </div>
+
+    <!-- ── EXPORTERS ── -->
+    <div class="doc-section" id="exporters">
+      <div class="doc-label">Exporters</div>
+      <h2 class="doc-h2">JSON &amp; CSV</h2>
+      <p>No extra dependencies required.</p>
+      <div class="code-window">
+        <div class="code-titlebar"><span class="code-dot red"></span><span class="code-dot yellow"></span><span class="code-dot green"></span></div>
+        <div class="code-body"><span class="fn">monitor</span>.<span class="fn">export</span>(<span class="str">"traces.json"</span>)
+<span class="fn">monitor</span>.<span class="fn">export</span>(<span class="str">"traces.csv"</span>)
+<span class="fn">monitor</span>.<span class="fn">export</span>(<span class="str">"week.json"</span>, <span class="fn">since</span>=<span class="str">"2024-06-01"</span>, <span class="fn">until</span>=<span class="str">"2024-06-07"</span>)</div>
+      </div>
+    </div>
+
+    <div class="doc-section" id="otel">
+      <h2 class="doc-h2">OpenTelemetry <span class="badge badge-orange">keeto[otel]</span></h2>
+      <p>Ships traces to any OTLP-compatible collector — Jaeger, Grafana Tempo, OpenTelemetry Collector.</p>
+      <div class="code-window">
+        <div class="code-titlebar"><span class="code-dot red"></span><span class="code-dot yellow"></span><span class="code-dot green"></span></div>
+        <div class="code-body"><span class="cmt"># gRPC (default)</span>
+<span class="fn">monitor</span>.<span class="fn">export</span>(<span class="fn">format</span>=<span class="str">"otel"</span>, <span class="fn">endpoint</span>=<span class="str">"http://jaeger:4317"</span>)
+
+<span class="cmt"># HTTP/protobuf</span>
+<span class="fn">monitor</span>.<span class="fn">export</span>(<span class="fn">format</span>=<span class="str">"otel"</span>, <span class="fn">endpoint</span>=<span class="str">"http://collector:4318"</span>, <span class="fn">protocol</span>=<span class="str">"http"</span>)</div>
+      </div>
+    </div>
+
+    <div class="doc-section" id="langsmith">
+      <h2 class="doc-h2">LangSmith</h2>
+      <p>Export to LangSmith, or import LangSmith runs into Keeto for comparison.</p>
+      <div class="code-window">
+        <div class="code-titlebar"><span class="code-dot red"></span><span class="code-dot yellow"></span><span class="code-dot green"></span></div>
+        <div class="code-body"><span class="cmt"># export</span>
+<span class="fn">monitor</span>.<span class="fn">export</span>(<span class="fn">format</span>=<span class="str">"langsmith"</span>, <span class="fn">project_name</span>=<span class="str">"my-project"</span>)
+
+<span class="cmt"># import for comparison</span>
+<span class="fn">count</span> = <span class="fn">monitor</span>.<span class="fn">import_langsmith</span>(<span class="str">"my-project"</span>, <span class="fn">limit</span>=<span class="num">50</span>)
+<span class="fn">monitor</span>.<span class="fn">compare</span>(<span class="fn">monitor</span>.<span class="fn">traces</span>[<span class="num">0</span>], <span class="fn">monitor</span>.<span class="fn">traces</span>[<span class="num">1</span>])</div>
+      </div>
+    </div>
+
+    <!-- ── CLI ── -->
+    <div class="doc-section" id="cli">
+      <div class="doc-label">CLI</div>
+      <h2 class="doc-h2">keeto CLI</h2>
+      <p>The <code>keeto</code> command reads from a SQLite database (<code>./keeto.db</code> or <code>~/.keeto/keeto.db</code> by default, or <code>--db PATH</code>).</p>
+
+      <table class="doc-table">
+        <thead><tr><th>Command</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td>keeto traces</td><td>List recent traces (table or JSON). Filter by --provider, --model, --errors.</td></tr>
+          <tr><td>keeto dashboard</td><td>Launch TUI or web dashboard.</td></tr>
+          <tr><td>keeto replay &lt;id&gt;</td><td>Re-send a captured request to the provider.</td></tr>
+          <tr><td>keeto export</td><td>Export traces to JSON, CSV, or OTLP.</td></tr>
+          <tr><td>keeto analyze</td><td>Print the recommendations report.</td></tr>
+          <tr><td>keeto compare &lt;id1&gt; &lt;id2&gt;</td><td>Side-by-side latency and cost diff between two traces.</td></tr>
+          <tr><td>keeto config</td><td>Get/set/list config values in ~/.keeto/config.toml.</td></tr>
+          <tr><td>keeto doctor</td><td>Diagnose setup — checks installed plugins, storage, Python version.</td></tr>
+        </tbody>
+      </table>
+
+      <div class="code-window">
+        <div class="code-titlebar"><span class="code-dot red"></span><span class="code-dot yellow"></span><span class="code-dot green"></span><span class="code-filename">terminal</span></div>
+        <div class="code-body"><span class="cmt"># list last 20 traces</span>
+$ keeto traces --db ./keeto.db
+
+<span class="cmt"># only errors, JSON output</span>
+$ keeto traces --errors --format json
+
+<span class="cmt"># export to file</span>
+$ keeto export --format json --output traces.json
+
+<span class="cmt"># launch TUI</span>
+$ keeto dashboard --mode tui</div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+  // Scrollspy — highlight sidebar link matching current scroll position
+  const links = document.querySelectorAll('.sidebar-link');
+  const sections = Array.from(document.querySelectorAll('.doc-section'));
+
+  function onScroll() {
+    const scrollY = window.scrollY + 100;
+    let active = sections[0];
+    for (const s of sections) {
+      if (s.offsetTop <= scrollY) active = s;
+    }
+    links.forEach(l => {
+      l.classList.toggle('active', l.getAttribute('href') === '#' + active.id);
+    });
+  }
+
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+</script>
+</body>
+</html>
