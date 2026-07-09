@@ -3,32 +3,34 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Keeto — AI Observability for Python</title>
+  <title>Keeto: AI Observability for Python</title>
   <meta name="description" content="Zero-config tracing, cost tracking, and dashboards for every AI call in your Python app. Two lines of code. No rewrites." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --bg:          #0c0a09;
-      --bg-2:        #1c1917;
-      --bg-3:        #292524;
-      --bg-4:        #312e2b;
-      --border:      #3d3735;
-      --border-dim:  #2a2623;
-      --orange:      #f97316;
-      --orange-2:    #ea580c;
-      --orange-dim:  #7c2d12;
-      --orange-glow: rgba(249,115,22,.15);
-      --amber:       #fbbf24;
-      --text:        #fafaf9;
-      --text-2:      #d6d3d1;
-      --text-muted:  #a8a29e;
-      --text-dim:    #78716c;
-      --code-bg:     #141210;
-      --code-border: #2a2623;
+      --bg:          #fdf8f4;
+      --bg-2:        #f7f0e8;
+      --bg-3:        #ede3d9;
+      --bg-4:        #e4d6c8;
+      --border:      #cfc0b0;
+      --border-dim:  #e4d9ce;
+      --orange:      #d4520a;
+      --orange-2:    #b84508;
+      --orange-dim:  #fde8d8;
+      --orange-glow: rgba(212,82,10,.09);
+      --amber:       #b45309;
+      --text:        #1a1208;
+      --text-2:      #3d2710;
+      --text-muted:  #6b4f36;
+      --text-dim:    #9c7d62;
+      --code-bg:     #efe7de;
+      --code-border: #ddd0c3;
       --radius:      10px;
       --radius-lg:   16px;
     }
@@ -75,7 +77,7 @@
       padding: 0 2rem;
       height: 60px;
       border-bottom: 1px solid var(--border-dim);
-      background: rgba(12,10,9,.85);
+      background: rgba(253,248,244,.92);
       backdrop-filter: blur(16px);
     }
 
@@ -142,15 +144,15 @@
       top: -200px;
       left: 50%;
       transform: translateX(-50%);
-      background: radial-gradient(circle, rgba(249,115,22,.22) 0%, transparent 70%);
+      background: radial-gradient(circle, rgba(212,82,10,.12) 0%, transparent 70%);
     }
 
     .hero-badge {
       display: inline-flex;
       align-items: center;
       gap: .4rem;
-      background: rgba(249,115,22,.1);
-      border: 1px solid rgba(249,115,22,.25);
+      background: rgba(212,82,10,.08);
+      border: 1px solid rgba(212,82,10,.22);
       color: var(--orange);
       font-size: .75rem;
       font-weight: 600;
@@ -258,7 +260,7 @@
       border-radius: var(--radius-lg);
       overflow: hidden;
       text-align: left;
-      box-shadow: 0 0 0 1px rgba(255,255,255,.04), 0 32px 64px rgba(0,0,0,.6);
+      box-shadow: 0 0 0 1px rgba(0,0,0,.06), 0 12px 40px rgba(0,0,0,.12);
     }
 
     .code-titlebar {
@@ -267,7 +269,7 @@
       gap: .5rem;
       padding: .75rem 1rem;
       border-bottom: 1px solid var(--code-border);
-      background: rgba(255,255,255,.02);
+      background: rgba(0,0,0,.03);
     }
 
     .code-dot {
@@ -295,13 +297,13 @@
       overflow-x: auto;
     }
 
-    .kw  { color: #fb923c; }
-    .fn  { color: #fbbf24; }
-    .str { color: #86efac; }
+    .kw  { color: #b84508; }
+    .fn  { color: #a16207; }
+    .str { color: #166534; }
     .cmt { color: var(--text-dim); font-style: italic; }
     .op  { color: var(--text-muted); }
-    .cls { color: #67e8f9; }
-    .num { color: #c084fc; }
+    .cls { color: #0e7490; }
+    .num { color: #7c3aed; }
 
     /* ── Hero stats ── */
     .hero-stats {
@@ -406,7 +408,7 @@
       height: 36px;
       border-radius: 8px;
       background: var(--orange-glow);
-      border: 1px solid rgba(249,115,22,.2);
+      border: 1px solid rgba(212,82,10,.18);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -507,8 +509,8 @@
       display: inline-flex;
       align-items: center;
       gap: .4rem;
-      background: rgba(249,115,22,.08);
-      border: 1px solid rgba(249,115,22,.2);
+      background: rgba(212,82,10,.07);
+      border: 1px solid rgba(212,82,10,.18);
       color: var(--orange);
       font-size: .8rem;
       font-weight: 500;
@@ -687,7 +689,7 @@
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
-      background: radial-gradient(ellipse, rgba(249,115,22,.12) 0%, transparent 70%);
+      background: radial-gradient(ellipse, rgba(212,82,10,.08) 0%, transparent 70%);
     }
 
     .cta-section h2 {
@@ -773,6 +775,12 @@
     @media (max-width: 500px) {
       .features-grid { grid-template-columns: 1fr; }
     }
+
+    /* Lucide icon sizing */
+    .how-card-icon svg   { width: 18px; height: 18px; color: var(--orange); }
+    .feature-icon        { font-size: 0; }
+    .feature-icon svg    { width: 22px; height: 22px; color: var(--orange); }
+    .slowest-badge svg   { width: 13px; height: 13px; vertical-align: middle; margin-right: .25rem; }
   </style>
 </head>
 <body>
@@ -787,6 +795,7 @@
     <li><a href="#how-it-works">How it works</a></li>
     <li><a href="#features">Features</a></li>
     <li><a href="#integrations">Integrations</a></li>
+    <li><a href="docs.html">Docs</a></li>
     <li><a href="https://github.com/bythebug/keeto" target="_blank">GitHub</a></li>
     <li><a href="https://pypi.org/project/keeto" target="_blank" class="nav-cta">pip install keeto</a></li>
   </ul>
@@ -798,7 +807,7 @@
 
   <div class="hero-badge">
     <span class="pulse"></span>
-    v0.2.1 — now on PyPI
+    v0.2.1, now on PyPI
   </div>
 
   <h1>The <em>strace</em> for<br/>your AI application</h1>
@@ -831,7 +840,7 @@
 <span class="kw">from</span> <span class="cls">keeto</span> <span class="kw">import</span> <span class="fn">monitor</span><br/>
 <span class="fn">monitor</span>.<span class="fn">start</span>()  <span class="cmt"># ← that's it</span><br/>
 <br/>
-<span class="cmt"># your existing code — completely unchanged</span><br/>
+<span class="cmt"># your existing code, completely unchanged</span><br/>
 <span class="fn">client</span>.<span class="fn">chat</span>.<span class="fn">completions</span>.<span class="fn">create</span>(<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="fn">model</span>=<span class="str">"gpt-4o"</span>,<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="fn">messages</span>=[{<span class="str">"role"</span>: <span class="str">"user"</span>, <span class="str">"content"</span>: <span class="str">"Hello!"</span>}]<br/>
@@ -870,7 +879,7 @@
   <span class="section-label">How it works</span>
   <h2 class="section-title">Two paths. Zero friction.</h2>
   <p class="section-sub">
-    Keeto intercepts at the httpx transport layer — the HTTP client used by
+    Keeto intercepts at the httpx transport layer, the HTTP client used by
     every major AI SDK. Drop two lines in and every call is captured.
     Or decorate your own pipeline stages for a stage-by-stage breakdown.
   </p>
@@ -879,11 +888,11 @@
     <!-- Card 1 -->
     <div class="how-card">
       <div class="how-card-header">
-        <div class="how-card-icon">⚡</div>
+        <div class="how-card-icon"><i data-lucide="zap"></i></div>
         <div class="how-card-title">Auto-detect AI SDK calls</div>
         <div class="how-card-desc">
           Keeto scans installed packages at startup and patches their HTTP
-          transport. OpenAI, Anthropic, LangChain, Gemini — all captured
+          transport. OpenAI, Anthropic, LangChain, Gemini: all captured
           automatically with zero code changes.
         </div>
       </div>
@@ -903,7 +912,7 @@
     <!-- Card 2 -->
     <div class="how-card">
       <div class="how-card-header">
-        <div class="how-card-icon">🔬</div>
+        <div class="how-card-icon"><i data-lucide="layers"></i></div>
         <div class="how-card-title">Instrument your own pipeline</div>
         <div class="how-card-desc">
           Building a RAG pipeline or multi-stage workflow? Use
@@ -936,7 +945,7 @@
   <h2 class="section-title">Know exactly where<br/>time is going.</h2>
   <p class="section-sub">
     <code style="font-family:'JetBrains Mono',monospace;color:var(--orange);font-size:.9em">monitor.pipeline_breakdown()</code>
-    gives you a latency table for every stage in your pipeline — sorted by
+    gives you a latency table for every stage in your pipeline, sorted by
     start time, with a slowest-stage call-out. No dashboards required.
   </p>
 
@@ -975,7 +984,7 @@
         </div>
       </div>
       <div class="slowest-badge">
-        ⚡ Slowest stage: <strong>llm</strong> — 91.5% of total time
+        <i data-lucide="alert-triangle"></i> Slowest stage: <strong>llm</strong> at 91.5% of total time
       </div>
     </div>
 
@@ -1016,7 +1025,7 @@
 
   <div class="features-grid">
     <div class="feature-card">
-      <div class="feature-icon">⚡</div>
+      <div class="feature-icon"><i data-lucide="zap"></i></div>
       <div class="feature-title">Zero config</div>
       <div class="feature-desc">
         <code style="font-family:'JetBrains Mono',monospace;font-size:.85em">monitor.start()</code> is the entire setup.
@@ -1024,7 +1033,7 @@
       </div>
     </div>
     <div class="feature-card">
-      <div class="feature-icon">💰</div>
+      <div class="feature-icon"><i data-lucide="circle-dollar-sign"></i></div>
       <div class="feature-title">Cost tracking</div>
       <div class="feature-desc">
         Every span captures input tokens, output tokens, cached tokens, and USD cost
@@ -1032,7 +1041,7 @@
       </div>
     </div>
     <div class="feature-card">
-      <div class="feature-icon">🔬</div>
+      <div class="feature-icon"><i data-lucide="layers"></i></div>
       <div class="feature-title">@trace decorator</div>
       <div class="feature-desc">
         Wrap any sync or async function as a named span. Stage names like
@@ -1040,7 +1049,7 @@
       </div>
     </div>
     <div class="feature-card">
-      <div class="feature-icon">📊</div>
+      <div class="feature-icon"><i data-lucide="bar-chart-2"></i></div>
       <div class="feature-title">Dashboards</div>
       <div class="feature-desc">
         Rich table in terminal, interactive Textual TUI, or a browser dashboard
@@ -1048,7 +1057,7 @@
       </div>
     </div>
     <div class="feature-card">
-      <div class="feature-icon">🛡️</div>
+      <div class="feature-icon"><i data-lucide="shield"></i></div>
       <div class="feature-title">PII scrubbing</div>
       <div class="feature-desc">
         <code style="font-family:'JetBrains Mono',monospace;font-size:.85em">scrub_pii=True</code> redacts emails, SSNs, phone numbers,
@@ -1056,7 +1065,7 @@
       </div>
     </div>
     <div class="feature-card">
-      <div class="feature-icon">🔔</div>
+      <div class="feature-icon"><i data-lucide="bell"></i></div>
       <div class="feature-title">Budget alerts</div>
       <div class="feature-desc">
         Set daily or session cost and token budgets. Keeto fires a warning
@@ -1064,15 +1073,15 @@
       </div>
     </div>
     <div class="feature-card">
-      <div class="feature-icon">📤</div>
+      <div class="feature-icon"><i data-lucide="upload"></i></div>
       <div class="feature-title">Export everywhere</div>
       <div class="feature-desc">
-        JSON, CSV, OpenTelemetry OTLP, LangSmith, MLflow, Prometheus — all
-        supported. Filter by time range.
+        JSON, CSV, OpenTelemetry OTLP, LangSmith, MLflow, Prometheus and more.
+        Filter by time range.
       </div>
     </div>
     <div class="feature-card">
-      <div class="feature-icon">🧠</div>
+      <div class="feature-icon"><i data-lucide="lightbulb"></i></div>
       <div class="feature-title">Recommendations</div>
       <div class="feature-desc">
         Rule-based analysis flags oversized prompts, repeated identical calls,
@@ -1080,11 +1089,11 @@
       </div>
     </div>
     <div class="feature-card">
-      <div class="feature-icon">🔄</div>
+      <div class="feature-icon"><i data-lucide="rotate-ccw"></i></div>
       <div class="feature-title">Replay</div>
       <div class="feature-desc">
         <code style="font-family:'JetBrains Mono',monospace;font-size:.85em">trace.replay()</code> re-sends the exact captured request
-        back to the provider — useful for debugging and regression testing.
+        back to the provider, useful for debugging and regression testing.
       </div>
     </div>
   </div>
@@ -1144,9 +1153,9 @@
     </div>
 
     <p class="install-note">
-      <code style="font-family:'JetBrains Mono',monospace">keeto[sqlite]</code> — persistent storage &nbsp;·&nbsp;
-      <code style="font-family:'JetBrains Mono',monospace">keeto[tui]</code> — interactive terminal dashboard &nbsp;·&nbsp;
-      <code style="font-family:'JetBrains Mono',monospace">keeto[web]</code> — browser dashboard
+      <code style="font-family:'JetBrains Mono',monospace">keeto[sqlite]</code>: persistent storage &nbsp;·&nbsp;
+      <code style="font-family:'JetBrains Mono',monospace">keeto[tui]</code>: interactive terminal dashboard &nbsp;·&nbsp;
+      <code style="font-family:'JetBrains Mono',monospace">keeto[web]</code>: browser dashboard
     </p>
   </div>
 </section>
@@ -1183,6 +1192,8 @@
 </footer>
 
 <script>
+  lucide.createIcons();
+
   function switchTab(name) {
     document.querySelectorAll('.install-tab').forEach(t => t.classList.remove('active'));
     document.querySelectorAll('.install-cmd').forEach(c => c.classList.remove('active'));
