@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Keeto — AI Observability for Python</title>
+  <title>Keeto: AI Observability for Python</title>
   <meta name="description" content="Zero-config tracing, cost tracking, and dashboards for every AI call in your Python app. Two lines of code. No rewrites." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -807,7 +807,7 @@
 
   <div class="hero-badge">
     <span class="pulse"></span>
-    v0.2.1 — now on PyPI
+    v0.2.1, now on PyPI
   </div>
 
   <h1>The <em>strace</em> for<br/>your AI application</h1>
@@ -840,7 +840,7 @@
 <span class="kw">from</span> <span class="cls">keeto</span> <span class="kw">import</span> <span class="fn">monitor</span><br/>
 <span class="fn">monitor</span>.<span class="fn">start</span>()  <span class="cmt"># ← that's it</span><br/>
 <br/>
-<span class="cmt"># your existing code — completely unchanged</span><br/>
+<span class="cmt"># your existing code, completely unchanged</span><br/>
 <span class="fn">client</span>.<span class="fn">chat</span>.<span class="fn">completions</span>.<span class="fn">create</span>(<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="fn">model</span>=<span class="str">"gpt-4o"</span>,<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="fn">messages</span>=[{<span class="str">"role"</span>: <span class="str">"user"</span>, <span class="str">"content"</span>: <span class="str">"Hello!"</span>}]<br/>
@@ -879,7 +879,7 @@
   <span class="section-label">How it works</span>
   <h2 class="section-title">Two paths. Zero friction.</h2>
   <p class="section-sub">
-    Keeto intercepts at the httpx transport layer — the HTTP client used by
+    Keeto intercepts at the httpx transport layer, the HTTP client used by
     every major AI SDK. Drop two lines in and every call is captured.
     Or decorate your own pipeline stages for a stage-by-stage breakdown.
   </p>
@@ -892,7 +892,7 @@
         <div class="how-card-title">Auto-detect AI SDK calls</div>
         <div class="how-card-desc">
           Keeto scans installed packages at startup and patches their HTTP
-          transport. OpenAI, Anthropic, LangChain, Gemini — all captured
+          transport. OpenAI, Anthropic, LangChain, Gemini: all captured
           automatically with zero code changes.
         </div>
       </div>
@@ -945,7 +945,7 @@
   <h2 class="section-title">Know exactly where<br/>time is going.</h2>
   <p class="section-sub">
     <code style="font-family:'JetBrains Mono',monospace;color:var(--orange);font-size:.9em">monitor.pipeline_breakdown()</code>
-    gives you a latency table for every stage in your pipeline — sorted by
+    gives you a latency table for every stage in your pipeline, sorted by
     start time, with a slowest-stage call-out. No dashboards required.
   </p>
 
@@ -984,7 +984,7 @@
         </div>
       </div>
       <div class="slowest-badge">
-        <i data-lucide="alert-triangle"></i> Slowest stage: <strong>llm</strong> — 91.5% of total time
+        <i data-lucide="alert-triangle"></i> Slowest stage: <strong>llm</strong> at 91.5% of total time
       </div>
     </div>
 
@@ -1076,8 +1076,8 @@
       <div class="feature-icon"><i data-lucide="upload"></i></div>
       <div class="feature-title">Export everywhere</div>
       <div class="feature-desc">
-        JSON, CSV, OpenTelemetry OTLP, LangSmith, MLflow, Prometheus — all
-        supported. Filter by time range.
+        JSON, CSV, OpenTelemetry OTLP, LangSmith, MLflow, Prometheus and more.
+        Filter by time range.
       </div>
     </div>
     <div class="feature-card">
@@ -1093,7 +1093,7 @@
       <div class="feature-title">Replay</div>
       <div class="feature-desc">
         <code style="font-family:'JetBrains Mono',monospace;font-size:.85em">trace.replay()</code> re-sends the exact captured request
-        back to the provider — useful for debugging and regression testing.
+        back to the provider, useful for debugging and regression testing.
       </div>
     </div>
   </div>
@@ -1153,9 +1153,9 @@
     </div>
 
     <p class="install-note">
-      <code style="font-family:'JetBrains Mono',monospace">keeto[sqlite]</code> — persistent storage &nbsp;·&nbsp;
-      <code style="font-family:'JetBrains Mono',monospace">keeto[tui]</code> — interactive terminal dashboard &nbsp;·&nbsp;
-      <code style="font-family:'JetBrains Mono',monospace">keeto[web]</code> — browser dashboard
+      <code style="font-family:'JetBrains Mono',monospace">keeto[sqlite]</code>: persistent storage &nbsp;·&nbsp;
+      <code style="font-family:'JetBrains Mono',monospace">keeto[tui]</code>: interactive terminal dashboard &nbsp;·&nbsp;
+      <code style="font-family:'JetBrains Mono',monospace">keeto[web]</code>: browser dashboard
     </p>
   </div>
 </section>

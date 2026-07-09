@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Docs — Keeto</title>
-  <meta name="description" content="Complete documentation for Keeto — zero-config AI observability for Python." />
+  <title>Docs: Keeto</title>
+  <meta name="description" content="Complete documentation for Keeto, zero-config AI observability for Python." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
@@ -507,7 +507,7 @@
       <h1 class="doc-h1">Documentation</h1>
       <p class="doc-lead">
         Keeto is a zero-config AI observability library for Python. It intercepts
-        every LLM call your app makes — automatically — and gives you latency,
+        every LLM call your app makes, automatically, and gives you latency,
         token counts, cost, and dashboards with two lines of code.
       </p>
 
@@ -529,7 +529,7 @@ pip install <span class="str">"keeto[sqlite,tui,web,otel]"</span></div>
       <table class="doc-table">
         <thead><tr><th>Extra</th><th>What it adds</th></tr></thead>
         <tbody>
-          <tr><td>keeto[sqlite]</td><td>Persistent SQLite storage via aiosqlite — traces survive process restarts</td></tr>
+          <tr><td>keeto[sqlite]</td><td>Persistent SQLite storage via aiosqlite; traces survive process restarts</td></tr>
           <tr><td>keeto[tui]</td><td>Interactive Textual terminal dashboard</td></tr>
           <tr><td>keeto[web]</td><td>Browser dashboard (FastAPI + HTMX + SSE)</td></tr>
           <tr><td>keeto[otel]</td><td>OpenTelemetry OTLP exporter for Jaeger, Tempo, etc.</td></tr>
@@ -590,7 +590,7 @@ pip install <span class="str">"keeto[sqlite,tui,web,otel]"</span></div>
       <h2 class="doc-h2">monitor.start()</h2>
       <p>
         Starts the background pipeline and installs all plugins. Safe to call multiple
-        times — subsequent calls are no-ops. Raises nothing; if a plugin fails to load,
+        times; subsequent calls are no-ops. Raises nothing; if a plugin fails to load,
         it is silently skipped.
       </p>
 
@@ -606,7 +606,7 @@ pip install <span class="str">"keeto[sqlite,tui,web,otel]"</span></div>
 
       <div class="callout callout-tip">
         <span class="callout-icon"><i data-lucide="lightbulb"></i></span>
-        <div>Set <code>KEETO_DISABLED=1</code> in the environment to make <code>monitor.start()</code> a no-op — useful for tests and CI where you don't want tracing overhead.</div>
+        <div>Set <code>KEETO_DISABLED=1</code> in the environment to make <code>monitor.start()</code> a no-op, useful for tests and CI where you don't want tracing overhead.</div>
       </div>
     </div>
 
@@ -615,7 +615,7 @@ pip install <span class="str">"keeto[sqlite,tui,web,otel]"</span></div>
       <h2 class="doc-h2">@trace decorator</h2>
       <p>
         Wraps any sync or async function as a named, timed span. Common stage names
-        are auto-mapped to the right <code>SpanKind</code> — no explicit kind needed.
+        are auto-mapped to the right <code>SpanKind</code>, no explicit kind needed.
       </p>
 
       <div class="code-window">
@@ -679,7 +679,7 @@ pip install <span class="str">"keeto[sqlite,tui,web,otel]"</span></div>
     <div class="doc-section" id="pipeline-breakdown">
       <h2 class="doc-h2">monitor.pipeline_breakdown()</h2>
       <p>
-        Prints a Rich latency table for the most recent trace — or pass
+        Prints a Rich latency table for the most recent trace. Pass
         <code>trace=</code> to inspect any historical one.
         Shows each stage in start-time order, a total row, and calls out the slowest stage.
       </p>
@@ -714,16 +714,16 @@ Total           <span class="num">1195</span> ms
 
       <div class="code-window">
         <div class="code-titlebar"><span class="code-dot red"></span><span class="code-dot yellow"></span><span class="code-dot green"></span></div>
-        <div class="code-body"><span class="fn">monitor</span>.<span class="fn">dashboard</span>()           <span class="cmt"># Rich table — no extra deps</span>
-<span class="fn">monitor</span>.<span class="fn">dashboard</span>(<span class="str">"tui"</span>)     <span class="cmt"># Textual TUI  — keeto[tui]</span>
-<span class="fn">monitor</span>.<span class="fn">dashboard</span>(<span class="str">"web"</span>)     <span class="cmt"># browser      — keeto[web]</span></div>
+        <div class="code-body"><span class="fn">monitor</span>.<span class="fn">dashboard</span>()           <span class="cmt"># Rich table, no extra deps</span>
+<span class="fn">monitor</span>.<span class="fn">dashboard</span>(<span class="str">"tui"</span>)     <span class="cmt"># Textual TUI  (keeto[tui])</span>
+<span class="fn">monitor</span>.<span class="fn">dashboard</span>(<span class="str">"web"</span>)     <span class="cmt"># browser      (keeto[web])</span></div>
       </div>
 
       <table class="doc-table">
         <thead><tr><th>Mode</th><th>Extra</th><th>Description</th></tr></thead>
         <tbody>
           <tr><td>"rich"</td><td><em>none</em></td><td>Prints a summary table with cost, tokens, latency P50/P95 to the terminal</td></tr>
-          <tr><td>"tui"</td><td>keeto[tui]</td><td>Interactive Textual app — trace list, waterfall timeline, cost panel, live refresh</td></tr>
+          <tr><td>"tui"</td><td>keeto[tui]</td><td>Interactive Textual app: trace list, waterfall timeline, cost panel, live refresh</td></tr>
           <tr><td>"web"</td><td>keeto[web]</td><td>Auto-opens browser; FastAPI + HTMX + SSE for real-time updates</td></tr>
         </tbody>
       </table>
@@ -758,18 +758,18 @@ Total           <span class="num">1195</span> ms
 <span class="fn">print</span>(<span class="fn">report</span>)
 <span class="cmt"># keeto recommendations:</span>
 <span class="cmt">#   [!] [prompt-size] Prompt exceeds 75% of context window on 3 traces</span>
-<span class="cmt">#   [i] [cache-candidate] Identical prompt sent 5× — consider caching</span>
+<span class="cmt">#   [i] [cache-candidate] Identical prompt sent 5x, consider caching</span>
 <span class="cmt">#   [i] [model-switch] gpt-4o tasks could use gpt-4o-mini at 10× lower cost</span></div>
       </div>
 
       <p>Rules that fire:</p>
       <ul>
-        <li><strong>prompt-size</strong> — prompt exceeds 75% of the model's context window</li>
-        <li><strong>cache-candidate</strong> — identical prompt sent more than twice in a session</li>
-        <li><strong>model-switch</strong> — task pattern suggests a cheaper model is viable</li>
-        <li><strong>context-waste</strong> — large system prompt repeated on every call</li>
-        <li><strong>retry-loop</strong> — same prompt retried more than 3 times</li>
-        <li><strong>cost-anomaly</strong> — span cost more than 2σ above session mean</li>
+        <li><strong>prompt-size</strong>: prompt exceeds 75% of the model's context window</li>
+        <li><strong>cache-candidate</strong>: identical prompt sent more than twice in a session</li>
+        <li><strong>model-switch</strong>: task pattern suggests a cheaper model is viable</li>
+        <li><strong>context-waste</strong>: large system prompt repeated on every call</li>
+        <li><strong>retry-loop</strong>: same prompt retried more than 3 times</li>
+        <li><strong>cost-anomaly</strong>: span cost more than 2σ above session mean</li>
       </ul>
     </div>
 
@@ -795,7 +795,7 @@ Total           <span class="num">1195</span> ms
       <table class="doc-table">
         <thead><tr><th>Parameter</th><th>Default</th><th>Description</th></tr></thead>
         <tbody>
-          <tr><td>storage</td><td>MemoryStorage()</td><td>Storage backend — MemoryStorage, SQLiteStorage, or PostgresStorage</td></tr>
+          <tr><td>storage</td><td>MemoryStorage()</td><td>Storage backend: MemoryStorage, SQLiteStorage, or PostgresStorage</td></tr>
           <tr><td>sample_rate</td><td>1.0</td><td>Fraction of requests to capture (0.0–1.0). Errors always captured.</td></tr>
           <tr><td>scrub_pii</td><td>False</td><td>Redact PII patterns before storage</td></tr>
           <tr><td>pii_patterns</td><td>None</td><td>Extra regex patterns to redact (requires scrub_pii=True)</td></tr>
@@ -917,7 +917,7 @@ Total           <span class="num">1195</span> ms
         <div class="int-card"><div class="int-card-name">OpenAI Agents SDK</div><div class="int-card-desc">Registers a TracingProcessor to capture agent, LLM, and function-call spans.</div></div>
         <div class="int-card"><div class="int-card-name">PydanticAI</div><div class="int-card-desc">Wraps Agent.run / Agent.run_sync with an AGENT span. Child LLM spans nest underneath.</div></div>
         <div class="int-card"><div class="int-card-name">FastAPI</div><div class="int-card-desc">ASGI middleware that creates a trace per HTTP request so AI calls are grouped by request.</div></div>
-        <div class="int-card"><div class="int-card-name">vLLM</div><div class="int-card-desc">Uses OpenAI SDK pointed at vLLM's base_url — captured by the OpenAI plugin automatically.</div></div>
+        <div class="int-card"><div class="int-card-name">vLLM</div><div class="int-card-desc">Uses OpenAI SDK pointed at vLLM's base_url, captured by the OpenAI plugin automatically.</div></div>
       </div>
     </div>
 
@@ -925,7 +925,7 @@ Total           <span class="num">1195</span> ms
     <div class="doc-section" id="integrations-custom">
       <h2 class="doc-h2">Custom pipelines</h2>
       <p>
-        Use <code>@trace</code> to instrument any Python function — sync or async.
+        Use <code>@trace</code> to instrument any Python function, sync or async.
         Nest decorated stages inside <code>monitor.span()</code> to produce a
         parent-child trace tree visible in the dashboard as a waterfall.
       </p>
@@ -972,7 +972,7 @@ Total           <span class="num">1195</span> ms
 
     <div class="doc-section" id="otel">
       <h2 class="doc-h2">OpenTelemetry <span class="badge badge-orange">keeto[otel]</span></h2>
-      <p>Ships traces to any OTLP-compatible collector — Jaeger, Grafana Tempo, OpenTelemetry Collector.</p>
+      <p>Ships traces to any OTLP-compatible collector: Jaeger, Grafana Tempo, OpenTelemetry Collector.</p>
       <div class="code-window">
         <div class="code-titlebar"><span class="code-dot red"></span><span class="code-dot yellow"></span><span class="code-dot green"></span></div>
         <div class="code-body"><span class="cmt"># gRPC (default)</span>
@@ -1013,7 +1013,7 @@ Total           <span class="num">1195</span> ms
           <tr><td>keeto analyze</td><td>Print the recommendations report.</td></tr>
           <tr><td>keeto compare &lt;id1&gt; &lt;id2&gt;</td><td>Side-by-side latency and cost diff between two traces.</td></tr>
           <tr><td>keeto config</td><td>Get/set/list config values in ~/.keeto/config.toml.</td></tr>
-          <tr><td>keeto doctor</td><td>Diagnose setup — checks installed plugins, storage, Python version.</td></tr>
+          <tr><td>keeto doctor</td><td>Diagnose setup: checks installed plugins, storage, Python version.</td></tr>
         </tbody>
       </table>
 
